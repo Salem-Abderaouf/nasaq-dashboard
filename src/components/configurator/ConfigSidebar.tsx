@@ -5,6 +5,7 @@ import { PATTERN_CATALOG } from '../../data/patterns';
 import { calculateDoorUnitPrice, calculateDefaultPromoPrice } from '../../utils/pricing';
 import { Client, Order } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
+import { supabase } from '../../api/supabase';
 import { 
   Plus, 
   Trash2, 
@@ -25,7 +26,8 @@ import {
   MapPin,
   RefreshCw,
   Check,
-  Lock
+  Lock,
+  Pencil
 } from 'lucide-react';
 
 interface ConfigSidebarProps {
@@ -101,6 +103,69 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
     }
     return null;
   }, [clients, info.clientId]);
+
+  // Edit client modal in Studio
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [isUpdatingClient, setIsUpdatingClient] = useState(false);
+
+  const openClientEditModal = (client: Client, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingClient(client);
+    setEditName(client.name || '');
+    setEditPhone(client.phone || '');
+    setEditAddress(client.address || '');
+    setEditNotes(client.notes || '');
+  };
+
+  const handleSaveClientEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    if (!editName.trim() || !editPhone.trim()) {
+      alert('Veuillez renseigner le nom et le téléphone.');
+      return;
+    }
+
+    setIsUpdatingClient(true);
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update({
+          name: editName.trim(),
+          phone: editPhone.trim(),
+          address: editAddress.trim() || null,
+          notes: editNotes.trim() || null
+        })
+        .eq('id', editingClient.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (onRefreshClients) {
+        onRefreshClients();
+      }
+
+      if (info.clientId === editingClient.id) {
+        onUpdateInfo({
+          clientName: data.name,
+          clientPhone: data.phone || '',
+          clientAddress: data.address || ''
+        });
+        setSearchQuery(data.name);
+      }
+
+      setEditingClient(null);
+    } catch (err: any) {
+      console.error('Error updating client in Studio:', err);
+      alert(err.message || 'Erreur lors de la mise à jour du client.');
+    } finally {
+      setIsUpdatingClient(false);
+    }
+  };
 
   // Helper to sync door price to official formula
   const handleAutoPrice = (index: number) => {
@@ -349,9 +414,20 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     )}
                   </div>
                 </div>
-                <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
-                  Client DB
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => openClientEditModal(selectedClient, e)}
+                    className="p-1 px-1.5 hover:bg-emerald-200/70 rounded text-emerald-800 font-bold text-[10px] flex items-center gap-1 transition border border-emerald-300"
+                    title="Modifier les coordonnées du client"
+                  >
+                    <Pencil className="w-3 h-3 text-emerald-700" />
+                    <span>Modifier</span>
+                  </button>
+                  <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                    Client DB
+                  </span>
+                </div>
               </div>
             )}
 
@@ -396,24 +472,26 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     {filteredClients.map(c => {
                       const isSelected = info.clientId === c.id;
                       return (
-                        <button
+                        <div
                           key={c.id}
-                          type="button"
-                          onClick={() => {
-                            onUpdateInfo({
-                              clientName: c.name,
-                              clientId: c.id,
-                              clientPhone: c.phone || '',
-                              clientAddress: c.address || ''
-                            });
-                            setSearchQuery(c.name);
-                            setIsClientDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-nasaq-teal-subtle transition ${
+                          className={`w-full px-3 py-2 flex items-center justify-between hover:bg-nasaq-teal-subtle transition ${
                             isSelected ? 'bg-nasaq-teal-subtle/80 font-bold' : ''
                           }`}
                         >
-                          <div className="min-w-0 pr-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onUpdateInfo({
+                                clientName: c.name,
+                                clientId: c.id,
+                                clientPhone: c.phone || '',
+                                clientAddress: c.address || ''
+                              });
+                              setSearchQuery(c.name);
+                              setIsClientDropdownOpen(false);
+                            }}
+                            className="flex-1 text-left min-w-0 pr-2"
+                          >
                             <div className="text-xs font-bold text-slate-800 truncate flex items-center gap-1.5">
                               <span>{c.name}</span>
                               {isSelected && (
@@ -428,17 +506,41 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                                 </span>
                               )}
                               {c.address && (
-                                <span className="flex items-center gap-1 truncate max-w-[140px]">
+                                <span className="flex items-center gap-1 truncate max-w-[130px]">
                                   <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                                   {c.address}
                                 </span>
                               )}
                             </div>
+                          </button>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => openClientEditModal(c, e)}
+                              className="p-1 hover:bg-slate-200/80 rounded text-slate-500 hover:text-slate-800 transition"
+                              title="Modifier la fiche client"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onUpdateInfo({
+                                  clientName: c.name,
+                                  clientId: c.id,
+                                  clientPhone: c.phone || '',
+                                  clientAddress: c.address || ''
+                                });
+                                setSearchQuery(c.name);
+                                setIsClientDropdownOpen(false);
+                              }}
+                              className="text-[10.5px] font-semibold text-nasaq-teal hover:underline px-1 py-0.5"
+                            >
+                              Choisir
+                            </button>
                           </div>
-                          <span className="text-[10px] font-semibold text-slate-400 shrink-0">
-                            Choisir
-                          </span>
-                        </button>
+                        </div>
                       );
                     })}
 
@@ -1032,6 +1134,92 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           {t('config.downloadZip', 'Télécharger les Dossiers (ZIP)')}
         </button>
       </div>
+
+      {/* Studio Edit Client Modal */}
+      {editingClient && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="bg-slate-800 text-white p-4 px-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-nasaq-gold" />
+                <h3 className="font-bold text-sm">Modifier la Fiche Client</h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setEditingClient(null)}
+                className="text-white/70 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveClientEdit} className="p-5 space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-600 mb-1">Nom / Entreprise *</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Nom complet du client"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <input 
+                  type="tel"
+                  required
+                  placeholder="0660 00 00 00"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-600 mb-1">Adresse de Chantier / Livraison</label>
+                <input 
+                  type="text"
+                  placeholder="Adresse ou localisation du chantier"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-600 mb-1">Remarques & Notes Internes</label>
+                <textarea 
+                  rows={2}
+                  placeholder="Notes particulières, préférences..."
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingClient(null)}
+                  className="px-3.5 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingClient}
+                  className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isUpdatingClient ? 'Enregistrement...' : 'Enregistrer les Modifications'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };
