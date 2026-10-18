@@ -12,9 +12,13 @@ import {
   ChevronRight,
   ShieldCheck,
   UserCheck,
-  Sparkles
+  Sparkles,
+  LogOut,
+  Hammer,
+  Key
 } from 'lucide-react';
-import { UserRole } from '../../types/database';
+import { useAuth } from '../../context/AuthContext';
+import { WorkerPermissions } from '../../types/database';
 
 export type NavView = 
   | 'dashboard' 
@@ -30,8 +34,6 @@ interface SidebarProps {
   onNavigate: (view: NavView) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-  userRole: UserRole;
-  onToggleRole: () => void;
   onSeedData: () => void;
   isSeeding?: boolean;
 }
@@ -41,20 +43,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   collapsed,
   onToggleCollapse,
-  userRole,
-  onToggleRole,
   onSeedData,
   isSeeding = false
 }) => {
-  const navItems: { id: NavView; label: string; icon: React.FC<{ className?: string }>; badge?: string }[] = [
-    { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
-    { id: 'configurator', label: 'Studio Configuration (2D)', icon: DoorOpen, badge: 'Nouveau' },
-    { id: 'orders', label: 'Commandes & Suivi', icon: ShoppingBag },
-    { id: 'clients', label: 'Clients & Comptes', icon: Users },
-    { id: 'prospects', label: 'Pipeline Prospects', icon: TrendingUp },
+  const { user, logout, hasPermission } = useAuth();
+
+  const allNavItems: { 
+    id: NavView; 
+    label: string; 
+    icon: React.FC<{ className?: string }>; 
+    badge?: string;
+    permission?: keyof WorkerPermissions;
+  }[] = [
+    { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, permission: 'canViewDashboard' },
+    { id: 'configurator', label: 'Studio Configuration (2D)', icon: DoorOpen, badge: 'CAD', permission: 'canCreateOrders' },
+    { id: 'orders', label: 'Commandes & Suivi', icon: ShoppingBag, permission: 'canViewOrders' },
+    { id: 'clients', label: 'Clients & CRM', icon: Users, permission: 'canManageClients' },
+    { id: 'prospects', label: 'Pipeline Prospects', icon: TrendingUp, permission: 'canManageProspects' },
     { id: 'products', label: 'Catalogue Portes WPC', icon: Layers },
-    { id: 'workers', label: 'Équipe & Paie (RH)', icon: BadgeDollarSign },
+    { id: 'workers', label: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' },
   ];
+
+  // Filter navigation items by active user permissions
+  const navItems = allNavItems.filter(item => {
+    if (!item.permission) return true;
+    if (user?.role === 'admin') return true;
+    return hasPermission(item.permission);
+  });
 
   return (
     <aside 
@@ -161,58 +176,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Role Switcher */}
+        {/* User Session Profile & Logout */}
         {!collapsed ? (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center gap-1.5">
-              {userRole === 'admin' ? (
-                <ShieldCheck className="w-4 h-4 text-nasaq-gold" />
-              ) : (
-                <UserCheck className="w-4 h-4 text-sky-400" />
-              )}
-              <span className="text-[11px] font-bold capitalize">{userRole}</span>
+          <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                user?.role === 'admin' ? 'bg-nasaq-gold text-slate-900 font-bold' : 'bg-nasaq-teal text-white'
+              }`}>
+                {user?.role === 'admin' ? <ShieldCheck className="w-4 h-4" /> : <Hammer className="w-4 h-4" />}
+              </div>
+              <div className="overflow-hidden leading-tight flex-1">
+                <div className="text-xs font-bold text-white truncate">{user?.name || 'Utilisateur'}</div>
+                <div className="text-[10px] text-nasaq-gold-light truncate font-medium">
+                  {user?.position || (user?.role === 'admin' ? 'Administrateur' : 'Employé')}
+                </div>
+              </div>
             </div>
+
             <button
               type="button"
-              onClick={onToggleRole}
-              className="text-[10px] bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white px-2 py-0.5 rounded transition"
+              onClick={logout}
+              className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white transition text-[11px] font-bold border border-rose-500/30"
+              title="Se déconnecter"
             >
-              Changer
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Déconnexion</span>
             </button>
           </div>
         ) : (
           <button
             type="button"
-            onClick={onToggleRole}
-            className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 transition text-nasaq-gold mx-auto"
-            title={`Rôle actuel: ${userRole}. Cliquer pour changer.`}
+            onClick={logout}
+            className="w-10 h-10 flex items-center justify-center rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white transition mx-auto border border-rose-500/30"
+            title={`Connecté: ${user?.name}. Déconnexion.`}
           >
-            <ShieldCheck className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
           </button>
         )}
 
-        {/* Seed Database Button */}
-        {!collapsed ? (
-          <button
-            type="button"
-            onClick={onSeedData}
-            disabled={isSeeding}
-            className="w-full py-1.5 px-2 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-light border border-nasaq-gold/40 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-            title="Injecter des données d'exemples dans Supabase (Clients, Portes, RH)"
-          >
-            <Sparkles className="w-3 h-3 text-nasaq-gold" />
-            {isSeeding ? 'Injection...' : 'Initialiser Démo Supabase'}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onSeedData}
-            disabled={isSeeding}
-            className="w-10 h-10 flex items-center justify-center rounded-lg bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold mx-auto transition"
-            title="Initialiser Démo Supabase"
-          >
-            <Database className="w-4 h-4" />
-          </button>
+        {/* Seed Database Button (for Admin) */}
+        {user?.role === 'admin' && (
+          !collapsed ? (
+            <button
+              type="button"
+              onClick={onSeedData}
+              disabled={isSeeding}
+              className="w-full py-1.5 px-2 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-light border border-nasaq-gold/40 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
+              title="Injecter des données d'exemples dans Supabase (Clients, Portes, RH)"
+            >
+              <Sparkles className="w-3 h-3 text-nasaq-gold" />
+              {isSeeding ? 'Injection...' : 'Initialiser Démo Supabase'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onSeedData}
+              disabled={isSeeding}
+              className="w-10 h-10 flex items-center justify-center rounded-lg bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold mx-auto transition"
+              title="Initialiser Démo Supabase"
+            >
+              <Database className="w-4 h-4" />
+            </button>
+          )
         )}
       </div>
     </aside>

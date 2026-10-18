@@ -13,13 +13,21 @@ import {
   X,
   CheckCircle2,
   Calendar,
-  Briefcase
+  Briefcase,
+  Key,
+  Lock,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
+import { WorkerCredentialsModal } from './WorkerCredentialsModal';
+import { AuthService } from '../../services/authService';
+import { PERMISSION_PRESETS } from '../../types/auth';
 
 export const WorkersPayrollView: React.FC = () => {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddWorkerModalOpen, setIsAddWorkerModalOpen] = useState(false);
+  const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
 
   // Financial adjustments for selected worker
@@ -41,6 +49,10 @@ export const WorkersPayrollView: React.FC = () => {
   const [position, setPosition] = useState('Menuisier Artisan WPC');
   const [baseSalary, setBaseSalary] = useState(65000);
   const [paymentDay, setPaymentDay] = useState(5);
+  const [newLoginEmail, setNewLoginEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('worker123');
+  const [newAppAccess, setNewAppAccess] = useState(true);
+  const [newPresetId, setNewPresetId] = useState('workshop');
   const [submittingWorker, setSubmittingWorker] = useState(false);
 
   const fetchWorkers = async () => {
@@ -183,11 +195,15 @@ export const WorkersPayrollView: React.FC = () => {
 
     setSubmittingWorker(true);
     try {
+      let createdWorker: Worker;
+      const calculatedEmail = newLoginEmail.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@nasaq.dz`;
+
       const { data, error } = await supabase
         .from('workers')
         .insert({
           name: name.trim(),
           phone: phone.trim(),
+          email: calculatedEmail,
           position: position.trim(),
           base_salary: baseSalary,
           payment_day: paymentDay,
@@ -197,12 +213,40 @@ export const WorkersPayrollView: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
-      setWorkers(prev => [...prev, data]);
-      setSelectedWorker(data);
+      if (error || !data) {
+        // Fallback for local state when Supabase RLS is on anon
+        createdWorker = {
+          id: `worker-${Date.now()}`,
+          name: name.trim(),
+          phone: phone.trim(),
+          email: calculatedEmail,
+          position: position.trim(),
+          base_salary: baseSalary,
+          payment_day: paymentDay,
+          employment_date: new Date().toISOString().split('T')[0],
+          status: 'active'
+        };
+      } else {
+        createdWorker = data;
+      }
+
+      // Configure initial app credentials and preset permissions
+      const preset = PERMISSION_PRESETS.find(p => p.id === newPresetId) || PERMISSION_PRESETS[0];
+      const initialCreds = {
+        login_email: calculatedEmail.toLowerCase(),
+        password: newPassword.trim() || 'worker123',
+        app_access_enabled: newAppAccess,
+        permissions: preset.permissions
+      };
+      AuthService.saveWorkerCredentials(createdWorker, initialCreds);
+
+      setWorkers(prev => [...prev, createdWorker]);
+      setSelectedWorker(createdWorker);
       setIsAddWorkerModalOpen(false);
       setName('');
       setPhone('');
+      setNewLoginEmail('');
+      setNewPassword('worker123');
     } catch (err: any) {
       console.error('Error creating worker:', err);
       alert(err.message || 'Erreur lors de la création de l\'employé.');
@@ -267,6 +311,9 @@ export const WorkersPayrollView: React.FC = () => {
             ) : (
               workers.map(w => {
                 const isSelected = selectedWorker?.id === w.id;
+                const creds = AuthService.getWorkerCredentials(w.email || w.id);
+                const hasAppAccess = creds ? creds.app_access_enabled : true;
+
                 return (
                   <div
                     key={w.id}
@@ -282,10 +329,22 @@ export const WorkersPayrollView: React.FC = () => {
                       <span className="font-mono font-bold text-nasaq-teal text-xs">{formatMoney(w.base_salary)}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                      <span className="truncate max-w-[140px]">{w.position}</span>
-                      <span className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.2 rounded font-mono">
-                        Jour: {w.payment_day}
-                      </span>
+                      <span className="truncate max-w-[130px]">{w.position}</span>
+                      <div className="flex items-center gap-1.5">
+                        {hasAppAccess ? (
+                          <span className="text-[9.5px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
+                            <Key className="w-2.5 h-2.5 text-emerald-600" />
+                            Accès
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] bg-slate-100 text-slate-400 px-1 py-0.2 rounded">
+                            Sans accès
+                          </span>
+                        )}
+                        <span className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.2 rounded font-mono">
+                          J:{w.payment_day}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -350,6 +409,58 @@ export const WorkersPayrollView: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              {/* App Credentials and Permissions Status Block */}
+              {(() => {
+                const activeCreds = AuthService.getWorkerCredentials(selectedWorker.email || selectedWorker.id);
+                const isEnabled = activeCreds ? activeCreds.app_access_enabled : true;
+                const activePermCount = activeCreds 
+                  ? Object.values(activeCreds.permissions).filter(Boolean).length 
+                  : 4;
+                const loginEmail = activeCreds?.login_email || selectedWorker.email || `${selectedWorker.name.toLowerCase().replace(/\s+/g, '.')}@nasaq.dz`;
+
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        isEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-500'
+                      }`}>
+                        <Key className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-xs">Accès Application & Droits Ouvrier</span>
+                          {isEnabled ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              Actif ({loginEmail})
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-slate-200 text-slate-600">
+                              Accès Désactivé
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {isEnabled 
+                            ? `Droits d'accès accordés par l'admin : ${activePermCount} / 11 permissions actives`
+                            : "L'employé ne peut pas se connecter. Activez son compte et attribuez-lui des droits."
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCredentialsModalOpen(true)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-nasaq-teal border border-nasaq-teal/40 rounded-xl text-xs font-bold transition shadow-2xs"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>Gérer les Identifiants & Droits</span>
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Monthly Net Salary Summary Box */}
               <div className="bg-gradient-to-r from-nasaq-teal to-nasaq-teal-dark text-white rounded-2xl p-5 shadow-sm">
@@ -614,6 +725,66 @@ export const WorkersPayrollView: React.FC = () => {
                 </div>
               </div>
 
+              {/* Login Credentials & Permissions Section for New Worker */}
+              <div className="pt-2 border-t border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5 text-nasaq-teal" />
+                    Accès & Connexion Application
+                  </span>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={newAppAccess}
+                      onChange={(e) => setNewAppAccess(e.target.checked)}
+                      className="rounded text-nasaq-teal focus:ring-nasaq-teal"
+                    />
+                    <span>Activer la connexion</span>
+                  </label>
+                </div>
+
+                {newAppAccess && (
+                  <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Identifiant / Email</label>
+                        <input
+                          type="text"
+                          placeholder={name ? `${name.toLowerCase().replace(/\s+/g, '.')}@nasaq.dz` : 'employe@nasaq.dz'}
+                          value={newLoginEmail}
+                          onChange={(e) => setNewLoginEmail(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg font-mono focus:border-nasaq-teal outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Mot de passe temporaire</label>
+                        <input
+                          type="text"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg font-mono focus:border-nasaq-teal outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Profil de droits par défaut</label>
+                      <select
+                        value={newPresetId}
+                        onChange={(e) => setNewPresetId(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:border-nasaq-teal outline-none"
+                      >
+                        {PERMISSION_PRESETS.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
                 <button
                   type="button"
@@ -628,12 +799,24 @@ export const WorkersPayrollView: React.FC = () => {
                   disabled={submittingWorker}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  {submittingWorker ? 'Création...' : 'Créer l\'Employé'}
+                  {submittingWorker ? 'Création...' : 'Créer l\'Employé & Enregistrer Accès'}
                 </button>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal Worker Credentials & Permissions */}
+      {isCredentialsModalOpen && selectedWorker && (
+        <WorkerCredentialsModal
+          worker={selectedWorker}
+          onClose={() => setIsCredentialsModalOpen(false)}
+          onSaved={() => {
+            // Trigger state update
+            setWorkers(prev => [...prev]);
+          }}
+        />
       )}
     </div>
   );

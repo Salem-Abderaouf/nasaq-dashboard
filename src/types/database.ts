@@ -147,6 +147,28 @@ export interface OrderStatusHistory {
   users?: { name: string };
 }
 
+export interface WorkerPermissions {
+  canViewDashboard: boolean;
+  canViewOrders: boolean;
+  canCreateOrders: boolean;
+  canChangeOrderStatus: boolean;
+  canViewFinancials: boolean;
+  canRecordPayments: boolean;
+  canAccessAtelierCutSheets: boolean;
+  canManageClients: boolean;
+  canManageProspects: boolean;
+  canAccessPayroll: boolean;
+  canExportDocuments: boolean;
+}
+
+export interface WorkerAppCredentials {
+  login_email: string;
+  password?: string;
+  app_access_enabled: boolean;
+  permissions: WorkerPermissions;
+  last_login?: string | null;
+}
+
 export interface Worker {
   id: string;
   name: string;
@@ -159,6 +181,7 @@ export interface Worker {
   payment_day: number;
   user_id?: string | null;
   created_at?: string;
+  login_credentials?: WorkerAppCredentials;
 }
 
 export interface SalaryPayment {

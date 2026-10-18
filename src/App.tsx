@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, NavView } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -10,26 +10,42 @@ import { ProductsCatalogView } from './components/products/ProductsCatalogView';
 import { WorkersPayrollView } from './components/workers/WorkersPayrollView';
 import { OrderDetailsModal } from './components/orders/OrderDetailsModal';
 import { RecordPaymentModal } from './components/orders/RecordPaymentModal';
-import { UserRole, Order, Client } from './types/database';
+import { LoginView } from './components/auth/LoginView';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Order, Client } from './types/database';
 import { supabase } from './api/supabase';
 import { SAMPLE_PRODUCTS, SAMPLE_CLIENTS, SAMPLE_PROSPECTS, SAMPLE_WORKERS } from './data/sampleData';
 import { DEFAULT_21_DOORS } from './data/defaultDoors';
 import { calculateOrderSummary } from './utils/pricing';
 
-export const App: React.FC = () => {
+const DashboardLayout: React.FC = () => {
+  const { user, isAuthenticated, hasPermission } = useAuth();
   const [currentView, setCurrentView] = useState<NavView>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('admin');
 
   // Modals state
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentModalOrder, setPaymentModalOrder] = useState<Order | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
 
-  // Toggle user role between admin and worker
-  const handleToggleRole = () => {
-    setUserRole(prev => (prev === 'admin' ? 'worker' : 'admin'));
-  };
+  // Auto-redirect if worker lands on or attempts to view a restricted tab
+  useEffect(() => {
+    if (!user) return;
+
+    if (currentView === 'workers' && !hasPermission('canAccessPayroll')) {
+      setCurrentView(hasPermission('canViewOrders') ? 'orders' : 'dashboard');
+    } else if (currentView === 'prospects' && !hasPermission('canManageProspects')) {
+      setCurrentView('orders');
+    } else if (currentView === 'configurator' && !hasPermission('canCreateOrders')) {
+      setCurrentView('orders');
+    } else if (currentView === 'dashboard' && !hasPermission('canViewDashboard')) {
+      setCurrentView('orders');
+    }
+  }, [user, currentView, hasPermission]);
+
+  if (!isAuthenticated) {
+    return <LoginView />;
+  }
 
   // Seed sample data to Supabase
   const handleSeedData = async () => {
@@ -100,17 +116,26 @@ export const App: React.FC = () => {
               width: d.widthCm,
               thickness: 4,
               color: d.colorId,
-              configuration: d
+              configuration: {
+                doorStructure: d.doorStructure,
+                leftLeafPercent: d.leftLeafPercent,
+                hasRevetment: d.hasRevetment,
+                revetmentHeightCm: d.revetmentHeightCm,
+                glassPanes: d.glassPanes,
+                patternId: d.patternId,
+                hardwareColor: d.hardwareColor,
+                priceNormal: d.priceNormal,
+                pricePromo: d.pricePromo,
+              }
             }));
-
             await supabase.from('order_items').insert(items);
 
-            // Insert payment deposit
+            // Insert initial payment of 80,000 DA
             await supabase.from('order_payments').insert({
               order_id: newOrder.id,
               amount: 80000,
               payment_date: new Date().toISOString().split('T')[0],
-              notes: 'Versement acompte initial',
+              notes: 'Acompte initial versé en espèces lors de la commande.',
               status: 'successful'
             });
           }
@@ -118,7 +143,6 @@ export const App: React.FC = () => {
       }
 
       alert('Base de données Supabase initialisée avec succès !');
-      // Refresh current view
       if (currentView === 'dashboard') {
         window.location.reload();
       }
@@ -149,8 +173,6 @@ export const App: React.FC = () => {
         onNavigate={setCurrentView}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        userRole={userRole}
-        onToggleRole={handleToggleRole}
         onSeedData={handleSeedData}
         isSeeding={isSeeding}
       />
@@ -161,12 +183,11 @@ export const App: React.FC = () => {
         <Header
           currentView={currentView}
           onNavigate={setCurrentView}
-          userRole={userRole}
         />
 
         {/* WORKSPACE VIEW CONTAINER */}
         <main className="flex-1 overflow-y-auto">
-          {currentView === 'dashboard' && (
+          {currentView === 'dashboard' && hasPermission('canViewDashboard') && (
             <DashboardView
               onNavigate={setCurrentView}
               onSelectOrder={setSelectedOrder}
@@ -175,11 +196,11 @@ export const App: React.FC = () => {
             />
           )}
 
-          {currentView === 'configurator' && (
+          {currentView === 'configurator' && hasPermission('canCreateOrders') && (
             <ConfiguratorView onOrderSaved={() => setCurrentView('orders')} />
           )}
 
-          {currentView === 'orders' && (
+          {currentView === 'orders' && hasPermission('canViewOrders') && (
             <OrdersListView
               onOpenConfigurator={() => setCurrentView('configurator')}
               onSelectOrder={setSelectedOrder}
@@ -187,23 +208,25 @@ export const App: React.FC = () => {
             />
           )}
 
-          {currentView === 'clients' && (
+          {currentView === 'clients' && hasPermission('canManageClients') && (
             <ClientsListView onStartOrderForClient={handleStartOrderForClient} />
           )}
 
-          {currentView === 'prospects' && (
+          {currentView === 'prospects' && hasPermission('canManageProspects') && (
             <ProspectsPipelineView />
           )}
 
           {currentView === 'products' && (
             <ProductsCatalogView 
-              onOpenStudioWithProduct={(prod) => {
-                setCurrentView('configurator');
+              onOpenStudioWithProduct={() => {
+                if (hasPermission('canCreateOrders')) {
+                  setCurrentView('configurator');
+                }
               }} 
             />
           )}
 
-          {currentView === 'workers' && (
+          {currentView === 'workers' && hasPermission('canAccessPayroll') && (
             <WorkersPayrollView />
           )}
         </main>
@@ -232,6 +255,14 @@ export const App: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <DashboardLayout />
+    </AuthProvider>
   );
 };
 

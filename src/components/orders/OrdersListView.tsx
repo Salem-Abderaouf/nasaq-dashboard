@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Clock
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface OrdersListViewProps {
   onOpenConfigurator: () => void;
@@ -24,6 +25,11 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
   onSelectOrder,
   onRecordPayment
 }) => {
+  const { hasPermission } = useAuth();
+  const canViewFinancials = hasPermission('canViewFinancials');
+  const canRecordPayments = hasPermission('canRecordPayments');
+  const canCreateOrders = hasPermission('canCreateOrders');
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,14 +113,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
             <span>Actualiser</span>
           </button>
 
-          <button
-            type="button"
-            onClick={onOpenConfigurator}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nouveau Devis / Commande</span>
-          </button>
+          {canCreateOrders && (
+            <button
+              type="button"
+              onClick={onOpenConfigurator}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Nouveau Devis / Commande</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -242,21 +250,33 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
 
                       {/* Total */}
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 text-xs">
-                        {formatMoney(order.total_amount)}
+                        {canViewFinancials ? (
+                          formatMoney(order.total_amount)
+                        ) : (
+                          <span className="text-[10.5px] text-slate-400 font-sans italic">Mode Atelier (0 DA)</span>
+                        )}
                       </td>
 
                       {/* Payment */}
                       <td className="py-3.5 px-4 text-right">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold ${paymentMeta.bg} ${paymentMeta.text}`}>
-                          {paymentMeta.label}
-                        </span>
-                        <div className="font-mono text-[10px] text-slate-400 mt-0.5">
-                          Versé : {formatMoney(order.paid_amount)}
-                        </div>
-                        {remaining > 0 && (
-                          <div className="font-mono text-[10px] text-rose-600 font-semibold">
-                            Reste : {formatMoney(remaining)}
-                          </div>
+                        {canViewFinancials ? (
+                          <>
+                            <span className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold ${paymentMeta.bg} ${paymentMeta.text}`}>
+                              {paymentMeta.label}
+                            </span>
+                            <div className="font-mono text-[10px] text-slate-400 mt-0.5">
+                              Versé : {formatMoney(order.paid_amount)}
+                            </div>
+                            {remaining > 0 && (
+                              <div className="font-mono text-[10px] text-rose-600 font-semibold">
+                                Reste : {formatMoney(remaining)}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">
+                            Non Chiffré
+                          </span>
                         )}
                       </td>
 
@@ -271,14 +291,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => onRecordPayment(order)}
-                            className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                            title="Encaisser un paiement"
-                          >
-                            <CreditCard className="w-4 h-4" />
-                          </button>
+                          {canRecordPayments && (
+                            <button
+                              type="button"
+                              onClick={() => onRecordPayment(order)}
+                              className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                              title="Encaisser un paiement"
+                            >
+                              <CreditCard className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
