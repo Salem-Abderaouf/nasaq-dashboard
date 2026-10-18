@@ -19,6 +19,7 @@ import {
   Store
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { WorkerPermissions } from '../../types/database';
 
 export type NavView = 
@@ -49,22 +50,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isSeeding = false
 }) => {
   const { user, logout, hasPermission } = useAuth();
+  const { t, isRtl } = useLanguage();
 
   const allNavItems: { 
     id: NavView; 
-    label: string; 
+    labelKey: string;
+    defaultLabel: string;
     icon: React.FC<{ className?: string }>; 
     badge?: string;
     permission?: keyof WorkerPermissions;
   }[] = [
-    { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, permission: 'canViewDashboard' },
-    { id: 'configurator', label: 'Studio Configuration (2D)', icon: DoorOpen, badge: 'CAD', permission: 'canCreateOrders' },
-    { id: 'orders', label: 'Commandes & Suivi', icon: ShoppingBag, permission: 'canViewOrders' },
-    { id: 'clients', label: 'Clients & CRM', icon: Users, permission: 'canManageClients' },
-    { id: 'prospects', label: 'Pipeline Prospects', icon: TrendingUp, permission: 'canManageProspects' },
-    { id: 'products', label: 'Catalogue Portes WPC', icon: Layers },
-    { id: 'workers', label: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' },
-    { id: 'store', label: 'Boutique & Atelier', icon: Store },
+    { id: 'dashboard', labelKey: 'nav.dashboard', defaultLabel: 'Tableau de Bord', icon: LayoutDashboard, permission: 'canViewDashboard' },
+    { id: 'configurator', labelKey: 'nav.configurator', defaultLabel: 'Studio Configuration (2D)', icon: DoorOpen, badge: 'CAD', permission: 'canCreateOrders' },
+    { id: 'orders', labelKey: 'nav.orders', defaultLabel: 'Commandes & Suivi', icon: ShoppingBag, permission: 'canViewOrders' },
+    { id: 'clients', labelKey: 'nav.clients', defaultLabel: 'Clients & CRM', icon: Users, permission: 'canManageClients' },
+    { id: 'prospects', labelKey: 'nav.prospects', defaultLabel: 'Pipeline Prospects', icon: TrendingUp, permission: 'canManageProspects' },
+    { id: 'products', labelKey: 'nav.products', defaultLabel: 'Catalogue Portes WPC', icon: Layers },
+    { id: 'workers', labelKey: 'nav.workers', defaultLabel: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' },
+    { id: 'store', labelKey: 'nav.store', defaultLabel: 'Boutique & Atelier', icon: Store },
   ];
 
   // Filter navigation items by active user permissions
@@ -76,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside 
-      className={`bg-nasaq-teal-dark text-white flex flex-col h-screen border-r border-slate-700/60 z-30 transition-all duration-300 ease-in-out shrink-0 select-none ${
+      className={`bg-nasaq-teal-dark text-white flex flex-col h-screen ${isRtl ? 'border-l' : 'border-r'} border-slate-700/60 z-30 transition-all duration-300 ease-in-out shrink-0 select-none ${
         collapsed ? 'w-16' : 'w-64'
       }`}
     >
@@ -93,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   NASAQ <span className="text-nasaq-gold font-normal">WPC</span>
                 </span>
                 <span className="text-[9.5px] text-nasaq-gold-light tracking-wide uppercase font-semibold">
-                  Portes & Menuiserie
+                  {t('nav.brandSubtitle', 'Portes & Menuiserie')}
                 </span>
               </div>
             </div>
@@ -103,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition"
               title="Réduire la barre latérale"
             >
-              <ChevronLeft className="w-4 h-4" />
+              {isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
           </>
         ) : (
@@ -125,6 +128,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
+          const itemLabel = t(item.labelKey, item.defaultLabel);
 
           return (
             <button
@@ -139,16 +143,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 isActive
                   ? collapsed
                     ? 'bg-nasaq-teal text-white shadow-md ring-1 ring-nasaq-gold/50'
-                    : 'bg-nasaq-teal text-white shadow-md border-l-4 border-nasaq-gold'
+                    : `bg-nasaq-teal text-white shadow-md ${isRtl ? 'border-r-4' : 'border-l-4'} border-nasaq-gold`
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? itemLabel : undefined}
             >
               <Icon className={`${collapsed ? 'w-5 h-5' : 'w-4 h-4'} shrink-0 ${isActive ? 'text-nasaq-gold-light' : 'text-slate-400 group-hover:text-white'}`} />
               
               {!collapsed && (
-                <div className="flex-1 flex items-center justify-between overflow-hidden text-left">
-                  <span className="truncate">{item.label}</span>
+                <div className={`flex-1 flex items-center justify-between overflow-hidden ${isRtl ? 'text-right' : 'text-left'}`}>
+                  <span className="truncate">{itemLabel}</span>
                   {item.badge && (
                     <span className="text-[9px] bg-nasaq-gold text-slate-900 font-extrabold px-1.5 py-0.2 rounded-full uppercase tracking-wider">
                       {item.badge}
@@ -191,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="overflow-hidden leading-tight flex-1">
                 <div className="text-xs font-bold text-white truncate">{user?.name || 'Utilisateur'}</div>
                 <div className="text-[10px] text-nasaq-gold-light truncate font-medium">
-                  {user?.position || (user?.role === 'admin' ? 'Administrateur' : 'Employé')}
+                  {user?.position || (user?.role === 'admin' ? t('header.role.admin', 'Administrateur') : t('header.role.worker', 'Employé'))}
                 </div>
               </div>
             </div>
@@ -200,10 +204,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={logout}
               className="w-full flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white transition text-[11px] font-bold border border-rose-500/30"
-              title="Se déconnecter"
+              title={t('nav.logout', 'Déconnexion')}
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Déconnexion</span>
+              <span>{t('nav.logout', 'Déconnexion')}</span>
             </button>
           </div>
         ) : (
@@ -211,7 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={logout}
             className="w-10 h-10 flex items-center justify-center rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 hover:text-white transition mx-auto border border-rose-500/30"
-            title={`Connecté: ${user?.name}. Déconnexion.`}
+            title={`${user?.name || ''} - ${t('nav.logout', 'Déconnexion')}`}
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -228,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title="Injecter des données d'exemples dans Supabase (Clients, Portes, RH)"
             >
               <Sparkles className="w-3 h-3 text-nasaq-gold" />
-              {isSeeding ? 'Injection...' : 'Initialiser Démo Supabase'}
+              {isSeeding ? t('nav.seeding', 'Injection...') : t('nav.seedData', 'Initialiser Démo Supabase')}
             </button>
           ) : (
             <button
@@ -236,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onSeedData}
               disabled={isSeeding}
               className="w-10 h-10 flex items-center justify-center rounded-lg bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold mx-auto transition"
-              title="Initialiser Démo Supabase"
+              title={t('nav.seedData', 'Initialiser Démo Supabase')}
             >
               <Database className="w-4 h-4" />
             </button>

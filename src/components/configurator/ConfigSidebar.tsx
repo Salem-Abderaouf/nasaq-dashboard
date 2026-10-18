@@ -4,6 +4,7 @@ import { COLOR_CATALOG } from '../../data/colors';
 import { PATTERN_CATALOG } from '../../data/patterns';
 import { calculateDoorUnitPrice, calculateDefaultPromoPrice } from '../../utils/pricing';
 import { Client, Order } from '../../types/database';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Plus, 
   Trash2, 
@@ -50,6 +51,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
   onDownloadZip,
   isSaving = false
 }) => {
+  const { t, isRtl } = useLanguage();
   const [visualCtrlOpen, setVisualCtrlOpen] = useState(false);
 
   // Helper to sync door price to official formula
@@ -131,17 +133,17 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <div className="bg-white rounded-md p-1 px-1.5 flex items-center justify-center shadow">
             <img src="/nasaq-logo-cropped.png" alt="NASAQ Logo" className="h-7 w-auto object-contain" />
           </div>
-          <span className="text-xs text-nasaq-gold-light font-semibold">Studio Portes</span>
+          <span className="text-xs text-nasaq-gold-light font-semibold">{t('config.brandTitle', 'Studio Portes')}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button 
             type="button"
             onClick={onResetEmpty}
             className="text-xs bg-white/10 hover:bg-white/20 text-white font-medium px-2.5 py-1 rounded transition flex items-center gap-1"
-            title="Démarrer un nouveau projet vierge"
+            title={t('config.newBlank', 'Démarrer un nouveau projet vierge')}
           >
             <RotateCcw className="w-3 h-3" />
-            <span>Nouveau Vierge</span>
+            <span>{t('config.newBlank', 'Nouveau Vierge')}</span>
           </button>
         </div>
       </div>
@@ -154,15 +156,15 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <div className="flex justify-between items-center font-bold text-slate-700 uppercase tracking-wider text-[10.5px]">
             <span className="flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5 text-nasaq-teal" />
-              <span>Commande Enregistrée (DB)</span>
+              <span>{t('config.dbOrderLabel', 'Commande Enregistrée (DB)')}</span>
             </span>
             {info.editingOrderId ? (
               <span className="text-amber-800 bg-amber-100 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
-                En Édition
+                {t('config.modeEdit', 'En Édition')}
               </span>
             ) : (
               <span className="text-emerald-700 bg-emerald-100 border border-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
-                Nouveau Vierge
+                {t('config.newBlank', 'Nouveau Vierge')}
               </span>
             )}
           </div>
@@ -180,7 +182,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               }}
               className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-nasaq-teal text-slate-800 font-medium"
             >
-              <option value="">-- Démarrer un projet vierge --</option>
+              <option value="">{t('config.dbOrderSelectBlank', '-- Démarrer un projet vierge --')}</option>
               {orders.map(o => (
                 <option key={o.id} value={o.id}>
                   {o.order_number} - {o.clients?.name || 'Client'} ({o.total_amount ? Number(o.total_amount).toLocaleString('fr-FR') + ' DA' : '0 DA'})
@@ -199,7 +201,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 onClick={onResetEmpty}
                 className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline"
               >
-                Fermer l'édition
+                {t('config.modeEditExit', 'Fermer l\'édition')}
               </button>
             </div>
           )}
@@ -775,8 +777,8 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         >
           <Save className="w-4 h-4" />
           {isSaving 
-            ? (info.editingOrderId ? 'Mise à jour dans Supabase...' : 'Enregistrement dans Supabase...') 
-            : (info.editingOrderId ? 'Mettre à jour la Commande (Supabase)' : 'Enregistrer la Commande dans Supabase')}
+            ? (info.editingOrderId ? t('config.updateInSupabase', 'Mise à jour dans Supabase...') : t('config.saveToSupabase', 'Enregistrement dans Supabase...')) 
+            : (info.editingOrderId ? t('config.updateInSupabase', 'Mettre à jour la Commande (Supabase)') : t('config.saveToSupabase', 'Enregistrer la Commande dans Supabase'))}
         </button>
         <button
           type="button"
@@ -784,7 +786,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           className="w-full bg-nasaq-gold hover:bg-nasaq-gold-dark text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
         >
           <FileArchive className="w-4 h-4" />
-          Télécharger les Dossiers (ZIP)
+          {t('config.downloadZip', 'Télécharger les Dossiers (ZIP)')}
         </button>
       </div>
     </aside>

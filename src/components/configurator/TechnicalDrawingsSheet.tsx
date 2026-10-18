@@ -4,6 +4,7 @@ import { DoorElevationSVG } from '../2d/DoorElevationSVG';
 import { COLOR_CATALOG } from '../../data/colors';
 import { PATTERN_CATALOG } from '../../data/patterns';
 import { downloadElementAsPNG } from '../../utils/exportUtils';
+import { useLanguage } from '../../context/LanguageContext';
 import { Download, Printer } from 'lucide-react';
 
 interface TechnicalDrawingsSheetProps {
@@ -17,12 +18,14 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
   info,
   onAddDoor
 }) => {
+  const { t, isRtl } = useLanguage();
+
   return (
     <div className="space-y-4">
       {/* Top Action Bar */}
       <div className="bg-white border border-slate-200 rounded-xl p-3 px-4 flex flex-wrap items-center justify-between gap-3 shadow-xs no-print">
         <div className="text-xs font-semibold text-nasaq-teal">
-          📦 Plans de fabrication WPC à l'échelle avec finitions, gravures CNC et cotes d'usinage réelles.
+          📦 {t('config.tabDrawings', 'Plans de fabrication WPC à l\'échelle avec finitions, gravures CNC et cotes d\'usinage réelles.')}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -31,7 +34,7 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
             className="flex items-center gap-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
           >
             <Download className="w-3.5 h-3.5" />
-            Télécharger Image 2D (PNG)
+            {t('common.download', 'Télécharger Image 2D (PNG)')}
           </button>
           <button
             type="button"
@@ -39,7 +42,7 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
             className="flex items-center gap-1.5 bg-white hover:bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
           >
             <Printer className="w-3.5 h-3.5" />
-            Imprimer
+            {t('common.print', 'Imprimer')}
           </button>
         </div>
       </div>
@@ -77,10 +80,10 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
             </div>
             <div className="max-w-md">
               <h3 className="font-cinzel text-base font-bold text-slate-800">
-                Studio Vierge — Aucune Porte
+                {t('config.emptyCanvasTitle', 'Studio Vierge — Aucune Porte')}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Le studio démarre avec un espace de travail vierge. Ajoutez une première porte personnalisée ou chargez une commande enregistrée depuis la base de données.
+                {t('config.emptyCanvasDesc', 'Le studio démarre avec un espace de travail vierge. Ajoutez une première porte personnalisée ou chargez une commande enregistrée depuis la base de données.')}
               </p>
             </div>
             {onAddDoor && (
@@ -89,7 +92,7 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
                 onClick={onAddDoor}
                 className="flex items-center gap-2 px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-sm"
               >
-                <span>+</span> Ajouter une Première Porte (P1)
+                <span>+</span> {t('config.addFirstDoor', 'Ajouter une Première Porte (P1)')}
               </button>
             )}
           </div>

@@ -13,6 +13,7 @@ import { RecordPaymentModal } from './components/orders/RecordPaymentModal';
 import { StoreInfoView } from './components/store/StoreInfoView';
 import { LoginView } from './components/auth/LoginView';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Order, Client } from './types/database';
 import { supabase } from './api/supabase';
 import { SAMPLE_PRODUCTS, SAMPLE_CLIENTS, SAMPLE_PROSPECTS, SAMPLE_WORKERS } from './data/sampleData';
@@ -293,9 +294,11 @@ const DashboardLayout: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <DashboardLayout />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <DashboardLayout />
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

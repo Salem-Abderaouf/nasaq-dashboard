@@ -22,6 +22,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* RTL Support for Arabic */
+[dir="rtl"] {
+  font-family: 'Segoe UI', Tahoma, -apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', Roboto, sans-serif;
+}
+
+[dir="rtl"] .font-cinzel {
+  font-family: 'Segoe UI', Tahoma, 'Cinzel', serif;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

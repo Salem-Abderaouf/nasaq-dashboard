@@ -18,6 +18,7 @@ import {
   DoorOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { NavView } from '../layout/Sidebar';
 
 interface StoreInfo {
@@ -56,6 +57,7 @@ interface StoreInfoViewProps {
 
 export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
   const { user } = useAuth();
+  const { t, isRtl } = useLanguage();
   const isAdmin = user?.role === 'admin';
 
   const [storeInfo, setStoreInfo] = useState<StoreInfo>(() => {
@@ -92,13 +94,13 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
         <div className="space-y-1 z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-nasaq-gold-light text-xs font-semibold">
             <Building2 className="w-3.5 h-3.5" />
-            <span>Coordonnées Officielles & Ateliers</span>
+            <span>{t('store.title', 'Coordonnées Officielles & Ateliers')}</span>
           </div>
           <h1 className="text-xl md:text-2xl font-bold font-cinzel tracking-wide text-white">
-            Boutique & Atelier NASAQ WPC
+            {t('store.title', 'Boutique & Atelier NASAQ WPC')}
           </h1>
           <p className="text-xs text-white/80 max-w-xl">
-            Points de contact directs pour le suivi d'usinage, passage de commande, visites showroom et service après-vente.
+            {t('header.store.subtitle', 'Coordonnées de l\'atelier de menuiserie, contacts showroom et horaires')}
           </p>
         </div>
 

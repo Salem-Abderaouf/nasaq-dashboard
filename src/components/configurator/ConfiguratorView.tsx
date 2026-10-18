@@ -8,6 +8,7 @@ import { InvoiceAtelierSheet } from './InvoiceAtelierSheet';
 import { downloadDossierZIP } from '../../utils/exportUtils';
 import { supabase } from '../../api/supabase';
 import { Client, Order } from '../../types/database';
+import { useLanguage } from '../../context/LanguageContext';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const STORAGE_KEY_DOORS = 'nasaq_dashboard_doors_state';
@@ -24,6 +25,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
   orderToEdit,
   onClearOrderToEdit 
 }) => {
+  const { t, isRtl } = useLanguage();
   const [activeTab, setActiveTab] = useState<'drawings' | 'normal' | 'promo' | 'atelier'>('drawings');
   
   // Default to empty fresh canvas unless resuming an active editing order
@@ -474,10 +476,10 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
           <div className="bg-amber-500 text-slate-900 px-4 py-2 flex items-center justify-between text-xs font-semibold shadow-xs border-b border-amber-600 no-print shrink-0">
             <div className="flex items-center gap-2">
               <span className="bg-slate-900 text-amber-400 font-mono px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">
-                MODE MODIFICATION COMMANDE
+                {t('config.modeEdit', 'MODE MODIFICATION COMMANDE')}
               </span>
               <span>
-                Commande : <strong className="font-mono">{info.orderNumber || info.docRef}</strong> — Client : <strong>{info.clientName || 'Inconnu'}</strong> ({doors.length} porte{doors.length > 1 ? 's' : ''})
+                {t('common.status', 'Commande')} : <strong className="font-mono">{info.orderNumber || info.docRef}</strong> — {t('common.client', 'Client')} : <strong>{info.clientName || 'Inconnu'}</strong> ({doors.length} {t('config.doorsCount', 'porte(s)')})
               </span>
             </div>
             <button
@@ -485,7 +487,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
               onClick={resetEmpty}
               className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1 shadow-2xs"
             >
-              <span>✕</span> Quitter et Nouveau Vierge
+              <span>✕</span> {t('config.modeEditExit', 'Quitter et Nouveau Vierge')}
             </button>
           </div>
         )}
@@ -502,7 +504,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
-              <span>📐</span> Dessins 2D ({doors.length})
+              <span>📐</span> {t('config.tabDrawings', 'Dessins 2D')} ({doors.length})
             </button>
 
             <button
@@ -514,7 +516,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
-              <span>💰</span> Facture Client
+              <span>💰</span> {t('config.tabInvoiceNormal', 'Facture Client')}
             </button>
 
             {info.isPromoEnabled && (
@@ -527,7 +529,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <span>🎁</span> Tarif Promo
+                <span>🎁</span> {t('config.tabInvoicePromo', 'Tarif Promo')}
               </button>
             )}
 
@@ -540,7 +542,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
                   : 'text-white/80 hover:text-white hover:bg-white/10'
               }`}
             >
-              <span>🔨</span> Fiche Atelier (Sans Prix)
+              <span>🔨</span> {t('config.tabInvoiceAtelier', 'Fiche Atelier (Sans Prix)')}
             </button>
           </div>
         </nav>

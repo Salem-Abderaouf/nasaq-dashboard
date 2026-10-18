@@ -14,6 +14,7 @@ import {
   Sliders
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface OrdersListViewProps {
   onOpenConfigurator: () => void;
@@ -29,6 +30,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
   onRecordPayment
 }) => {
   const { hasPermission } = useAuth();
+  const { t, isRtl } = useLanguage();
   const canViewFinancials = hasPermission('canViewFinancials');
   const canRecordPayments = hasPermission('canRecordPayments');
   const canCreateOrders = hasPermission('canCreateOrders');
@@ -98,10 +100,10 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
-            Commandes & Suivi de Fabrication
+            {t('orders.title', 'Commandes & Suivi de Fabrication')}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Historique complet, états d'avancement atelier et gestion des règlements
+            {t('orders.subtitle', 'Historique complet, états d\'avancement atelier et gestion des règlements')}
           </p>
         </div>
 
@@ -113,7 +115,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <span>{t('common.refresh', 'Actualiser')}</span>
           </button>
 
           {canCreateOrders && (
@@ -123,7 +125,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouveau Devis / Commande</span>
+              <span>{t('orders.newOrder', 'Nouveau Devis / Commande')}</span>
             </button>
           )}
         </div>
@@ -134,13 +136,13 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className={`w-4 h-4 text-slate-400 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5`} />
             <input 
               type="text"
-              placeholder="Rechercher par N° commande, client, tél..."
+              placeholder={t('common.search', 'Rechercher par N° commande, client, tél...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal transition"
+              className={`w-full ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal transition`}
             />
           </div>
 
@@ -185,16 +187,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
       {/* Orders Table */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs border-collapse`}>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10.5px] tracking-wider">
-                <th className="py-3 px-4">N° Commande</th>
-                <th className="py-3 px-4">Client & Contact</th>
-                <th className="py-3 px-4">Date Émission</th>
-                <th className="py-3 px-4">Statut Atelier</th>
-                <th className="py-3 px-4 text-right">Total Commande</th>
-                <th className="py-3 px-4 text-right">Paiement</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+                <th className="py-3 px-4">{t('orders.number', 'N° Commande')}</th>
+                <th className="py-3 px-4">{t('common.client', 'Client')}</th>
+                <th className="py-3 px-4">{t('common.date', 'Date')}</th>
+                <th className="py-3 px-4">{t('common.status', 'Statut')}</th>
+                <th className={`py-3 px-4 ${isRtl ? 'text-left' : 'text-right'}`}>{t('common.total', 'Total')}</th>
+                <th className={`py-3 px-4 ${isRtl ? 'text-left' : 'text-right'}`}>{t('common.paid', 'Paiement')}</th>
+                <th className="py-3 px-4 text-center">{t('common.actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -247,32 +249,32 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                       <td className="py-3.5 px-4">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold ${statusMeta.bg} ${statusMeta.text}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`}></span>
-                          {statusMeta.label}
+                          {t('status.' + order.status, statusMeta.label)}
                         </span>
                       </td>
 
                       {/* Total */}
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 text-xs">
+                      <td className={`py-3.5 px-4 ${isRtl ? 'text-left' : 'text-right'} font-mono font-bold text-slate-900 text-xs`}>
                         {canViewFinancials ? (
                           formatMoney(order.total_amount)
                         ) : (
-                          <span className="text-[10.5px] text-slate-400 font-sans italic">Mode Atelier (0 DA)</span>
+                          <span className="text-[10.5px] text-slate-400 font-sans italic">{t('orders.workshopMode', 'Mode Atelier (0 DA)')}</span>
                         )}
                       </td>
 
                       {/* Payment */}
-                      <td className="py-3.5 px-4 text-right">
+                      <td className={`py-3.5 px-4 ${isRtl ? 'text-left' : 'text-right'}`}>
                         {canViewFinancials ? (
                           <>
                             <span className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold ${paymentMeta.bg} ${paymentMeta.text}`}>
                               {paymentMeta.label}
                             </span>
                             <div className="font-mono text-[10px] text-slate-400 mt-0.5">
-                              Versé : {formatMoney(order.paid_amount)}
+                              {t('common.paid', 'Versé')} : {formatMoney(order.paid_amount)}
                             </div>
                             {remaining > 0 && (
                               <div className="font-mono text-[10px] text-rose-600 font-semibold">
-                                Reste : {formatMoney(remaining)}
+                                {t('common.remaining', 'Reste')} : {formatMoney(remaining)}
                               </div>
                             )}
                           </>
@@ -291,7 +293,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                               type="button"
                               onClick={() => onEditOrderInStudio(order)}
                               className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                              title="Modifier dans le Studio 2D"
+                              title={t('orders.editInStudio', 'Modifier dans le Studio 2D')}
                             >
                               <Sliders className="w-4 h-4" />
                             </button>
@@ -300,7 +302,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                             type="button"
                             onClick={() => onSelectOrder(order)}
                             className="p-1.5 text-slate-500 hover:text-nasaq-teal hover:bg-nasaq-teal-subtle rounded-lg transition"
-                            title="Ouvrir détails de la commande"
+                            title={t('orders.viewDetails', 'Ouvrir détails de la commande')}
                           >
                             <Eye className="w-4 h-4" />
                           </button>
@@ -309,7 +311,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                               type="button"
                               onClick={() => onRecordPayment(order)}
                               className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                              title="Encaisser un paiement"
+                              title={t('orders.recordPayment', 'Encaisser un paiement')}
                             >
                               <CreditCard className="w-4 h-4" />
                             </button>

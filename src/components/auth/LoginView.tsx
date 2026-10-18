@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 import { 
   ShieldCheck, 
   Lock, 
@@ -10,11 +12,13 @@ import {
   Briefcase, 
   Sparkles,
   ArrowRight,
+  ArrowLeft,
   AlertCircle
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
   const { login, quickLogin } = useAuth();
+  const { t, isRtl } = useLanguage();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +33,7 @@ export const LoginView: React.FC = () => {
     try {
       const result = await login(identifier, password);
       if (!result.success) {
-        setError(result.error || 'Identifiants incorrects.');
+        setError(result.error || t('auth.credentialsError', 'Identifiants incorrects.'));
       }
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de la connexion.');
@@ -49,7 +53,12 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-slate-100 p-4 select-none">
+    <div className="min-h-screen w-screen flex items-center justify-center bg-slate-100 p-4 select-none relative">
+      {/* Top Floating Language Switcher */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector variant="header" />
+      </div>
+
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative">
         
         {/* Top Brand Header */}
@@ -65,10 +74,10 @@ export const LoginView: React.FC = () => {
             NASAQ <span className="text-nasaq-gold">WPC</span>
           </h1>
           <p className="text-[11px] text-nasaq-gold-light uppercase tracking-widest font-semibold mt-0.5">
-            Portes & Menuiserie Haute Résistance
+            {t('auth.tagline', 'Portes & Menuiserie Haute Résistance')}
           </p>
           <div className="text-xs text-slate-300 mt-1 font-medium">
-            Plateforme de Gestion & Atelier
+            {t('auth.platform', 'Plateforme de Gestion & Atelier')}
           </div>
         </div>
 
@@ -84,17 +93,17 @@ export const LoginView: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
-                Identifiant ou Email
+                {t('auth.identifier', 'Identifiant ou Email')}
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Mail className={`w-4 h-4 text-slate-400 absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3`} />
                 <input
                   type="text"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="jolylip@gmail.com ou email employé"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition"
+                  placeholder={t('auth.identifierPlaceholder', 'jolylip@gmail.com ou email employé')}
+                  className={`w-full ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition`}
                 />
               </div>
             </div>
@@ -102,23 +111,23 @@ export const LoginView: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  Mot de passe ou Code PIN
+                  {t('auth.password', 'Mot de passe ou Code PIN')}
                 </label>
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Lock className={`w-4 h-4 text-slate-400 absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3`} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition"
+                  className={`w-full ${isRtl ? 'pr-10 pl-10' : 'pl-10 pr-10'} py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 transition"
+                  className={`absolute ${isRtl ? 'left-3.5' : 'right-3.5'} top-2.5 text-slate-400 hover:text-slate-600 transition`}
                   title={showPassword ? 'Masquer' : 'Afficher'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -131,8 +140,8 @@ export const LoginView: React.FC = () => {
               disabled={loading}
               className="w-full mt-2 py-3 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>{loading ? 'Connexion en cours...' : 'Se connecter'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>{loading ? t('auth.loggingIn', 'Connexion en cours...') : t('auth.login', 'Se connecter')}</span>
+              {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
@@ -141,7 +150,7 @@ export const LoginView: React.FC = () => {
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-nasaq-gold" />
-                Accès Rapides Préconfigurés
+                {t('auth.quickAccess', 'Accès Rapides Préconfigurés')}
               </span>
             </div>
 

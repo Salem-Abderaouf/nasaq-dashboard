@@ -6,6 +6,7 @@ import { DoorElevationSVG } from '../2d/DoorElevationSVG';
 import { DoorConfigItem } from '../../types/configurator';
 import { X, Printer, CheckCircle, Ban, Clock, ShoppingBag, Sliders } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -25,6 +26,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   if (!order) return null;
 
   const { hasPermission, user } = useAuth();
+  const { t, isRtl } = useLanguage();
   const canViewFinancials = hasPermission('canViewFinancials');
   const canRecordPayments = hasPermission('canRecordPayments');
   const canChangeOrderStatus = hasPermission('canChangeOrderStatus');
@@ -122,11 +124,11 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               <div className="flex items-center gap-2">
                 <h2 className="font-mono text-base font-extrabold">{order.order_number}</h2>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${statusMeta.bg} ${statusMeta.text}`}>
-                  {statusMeta.label}
+                  {t('status.' + order.status, statusMeta.label)}
                 </span>
               </div>
               <span className="text-[11px] text-nasaq-gold-light">
-                Créée le {formatDate(order.created_at)}
+                {t('orderModal.createdOn', 'Créée le')} {formatDate(order.created_at)}
               </span>
             </div>
           </div>
@@ -140,10 +142,10 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   onClose();
                 }}
                 className="flex items-center gap-1.5 bg-nasaq-gold hover:bg-nasaq-gold-dark text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
-                title="Modifier les portes et dimensions de cette commande dans le Studio 2D"
+                title={t('orderModal.editInStudio', 'Modifier les portes et dimensions de cette commande dans le Studio 2D')}
               >
                 <Sliders className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Modifier dans le Studio 2D</span>
+                <span className="hidden sm:inline">{t('orders.editInStudio', 'Modifier dans le Studio 2D')}</span>
                 <span className="sm:hidden">Studio 2D</span>
               </button>
             )}
@@ -151,7 +153,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               type="button"
               onClick={() => window.print()}
               className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
-              title="Imprimer"
+              title={t('common.print', 'Imprimer')}
             >
               <Printer className="w-5 h-5" />
             </button>
@@ -159,6 +161,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               type="button"
               onClick={onClose}
               className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+              title={t('common.close', 'Fermer')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -172,7 +175,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Client Info */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Client</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400">{t('common.client', 'Client')}</span>
               <div className="font-bold text-slate-900 text-sm">{order.clients?.name || 'N/A'}</div>
               <div className="text-slate-500 font-mono text-xs">{order.clients?.phone || 'N/A'}</div>
               <div className="text-slate-500 text-[11px]">{order.clients?.address || 'Pas d\'adresse spécifiée'}</div>
@@ -184,28 +187,28 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               {canViewFinancials ? (
                 <>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Total :</span>
+                    <span className="text-slate-500">{t('common.total', 'Total')} :</span>
                     <span className="font-mono font-bold text-sm text-slate-900">{formatMoney(order.total_amount)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Encaissé :</span>
+                    <span className="text-slate-500">{t('common.paid', 'Encaissé')} :</span>
                     <span className="font-mono font-bold text-xs text-emerald-600">{formatMoney(order.paid_amount)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                    <span className="font-bold text-slate-700">Reste dû :</span>
+                    <span className="font-bold text-slate-700">{t('common.remaining', 'Reste dû')} :</span>
                     <span className="font-mono font-extrabold text-xs text-rose-600">{formatMoney(remaining)}</span>
                   </div>
                 </>
               ) : (
                 <div className="py-2 text-center text-slate-400 italic text-[11px]">
-                  Mode Atelier : Cotes de coupe & débits uniquement (Prix masqués).
+                  {t('orders.workshopMode', 'Mode Atelier (0 DA)')}
                 </div>
               )}
             </div>
 
             {/* Workflow Control */}
             <div className="bg-nasaq-teal-subtle border border-nasaq-teal/20 rounded-xl p-3.5 space-y-2">
-              <span className="text-[10px] uppercase font-bold text-nasaq-teal">Changer le Statut</span>
+              <span className="text-[10px] uppercase font-bold text-nasaq-teal">{t('orderModal.changeStatus', 'Changer le Statut')}</span>
               <select
                 value={order.status}
                 disabled={updatingStatus || !canChangeOrderStatus}
@@ -395,7 +398,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-xs transition"
           >
-            Fermer
+            {t('common.close', 'Fermer')}
           </button>
         </div>
       </div>
