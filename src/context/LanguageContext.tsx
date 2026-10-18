@@ -22,7 +22,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return saved;
       }
     } catch {}
-    return 'fr';
+    return 'en';
   });
 
   const dir: Direction = language === 'ar' ? 'rtl' : 'ltr';
@@ -52,7 +52,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (langDict && langDict[key]) {
       return langDict[key];
     }
-    // Fallback to French if key not found in selected language
+    // Fallback to English first if key not found in selected language
+    if (translations.en && translations.en[key]) {
+      return translations.en[key];
+    }
+    // Fallback to French
     if (translations.fr && translations.fr[key]) {
       return translations.fr[key];
     }
