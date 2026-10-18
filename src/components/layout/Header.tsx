@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavView } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
-import { Plus, ShieldCheck, User, LogOut, Hammer } from 'lucide-react';
+import { Plus, ShieldCheck, Hammer } from 'lucide-react';
 
 interface HeaderProps {
   currentView: NavView;
@@ -12,7 +12,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentView,
   onNavigate
 }) => {
-  const { user, logout, hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const titles: Record<NavView, { title: string; subtitle: string }> = {
     dashboard: {
       title: 'Tableau de Bord Exécutif',
@@ -65,57 +65,39 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Currency badge */}
-        <div className="px-2.5 py-1 rounded-lg bg-nasaq-gold-subtle border border-nasaq-gold/30 text-nasaq-gold-dark font-mono text-xs font-bold">
-          DZD (DA)
-        </div>
-
         {/* Quick Launch Configurator if permitted */}
         {currentView !== 'configurator' && hasPermission('canCreateOrders') && (
           <button
             type="button"
             onClick={() => onNavigate('configurator')}
-            className="flex items-center gap-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+            className="flex items-center gap-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden md:inline">Studio Devis 2D</span>
           </button>
         )}
 
-        {/* User Role Profile & Logout */}
-        <div className="flex items-center gap-3 pl-2 border-l border-slate-200">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-              user?.role === 'admin' 
-                ? 'bg-nasaq-gold/20 text-nasaq-gold-dark border border-nasaq-gold/40' 
-                : 'bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal/30'
-            }`}>
-              {user?.role === 'admin' ? (
-                <ShieldCheck className="w-4 h-4 text-nasaq-teal" />
-              ) : (
-                <Hammer className="w-4 h-4 text-nasaq-teal" />
-              )}
+        {/* User Role Profile */}
+        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+            user?.role === 'admin' 
+              ? 'bg-nasaq-gold/20 text-nasaq-gold-dark border border-nasaq-gold/40' 
+              : 'bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal/30'
+          }`}>
+            {user?.role === 'admin' ? (
+              <ShieldCheck className="w-4 h-4 text-nasaq-teal" />
+            ) : (
+              <Hammer className="w-4 h-4 text-nasaq-teal" />
+            )}
+          </div>
+          <div className="hidden md:block leading-tight text-left">
+            <div className="text-xs font-bold text-slate-800 truncate max-w-[160px]">
+              {user?.name || 'Utilisateur'}
             </div>
-            <div className="hidden md:block leading-tight text-left">
-              <div className="text-xs font-bold text-slate-800 truncate max-w-[150px]">
-                {user?.name || 'Utilisateur'}
-              </div>
-              <div className="text-[10px] text-slate-400 font-medium truncate max-w-[150px]">
-                {user?.position || (user?.role === 'admin' ? 'Administrateur' : 'Artisan')}
-              </div>
+            <div className="text-[10px] text-slate-400 font-medium truncate max-w-[160px]">
+              {user?.position || (user?.role === 'admin' ? 'Administrateur' : 'Artisan')}
             </div>
           </div>
-
-          {/* Logout Button */}
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
-            title="Se déconnecter de la session"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Déconnexion</span>
-          </button>
         </div>
       </div>
     </header>
