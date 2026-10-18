@@ -10,6 +10,7 @@ import { ProductsCatalogView } from './components/products/ProductsCatalogView';
 import { WorkersPayrollView } from './components/workers/WorkersPayrollView';
 import { OrderDetailsModal } from './components/orders/OrderDetailsModal';
 import { RecordPaymentModal } from './components/orders/RecordPaymentModal';
+import { StoreInfoView } from './components/store/StoreInfoView';
 import { LoginView } from './components/auth/LoginView';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Order, Client } from './types/database';
@@ -228,6 +229,10 @@ const DashboardLayout: React.FC = () => {
 
           {currentView === 'workers' && hasPermission('canAccessPayroll') && (
             <WorkersPayrollView />
+          )}
+
+          {currentView === 'store' && (
+            <StoreInfoView onNavigate={setCurrentView} />
           )}
         </main>
       </div>

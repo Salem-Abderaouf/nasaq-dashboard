@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavView } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
-import { Phone, Plus, ShieldCheck, User, LogOut, Hammer } from 'lucide-react';
+import { Plus, ShieldCheck, User, LogOut, Hammer } from 'lucide-react';
 
 interface HeaderProps {
   currentView: NavView;
@@ -41,6 +41,10 @@ export const Header: React.FC<HeaderProps> = ({
     workers: {
       title: 'Gestion des Ressources Humaines & Paie',
       subtitle: 'Fiches artisans, avances sur salaire, primes, retenues et virement net'
+    },
+    store: {
+      title: 'Boutique & Atelier NASAQ WPC',
+      subtitle: 'Coordonnées de l\'atelier de menuiserie, contacts showroom et horaires'
     }
   };
 
@@ -61,12 +65,6 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Workshop Contact */}
-        <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
-          <Phone className="w-3.5 h-3.5 text-nasaq-teal" />
-          <span>Atelier : +213 660 99 60 97</span>
-        </div>
-
         {/* Currency badge */}
         <div className="px-2.5 py-1 rounded-lg bg-nasaq-gold-subtle border border-nasaq-gold/30 text-nasaq-gold-dark font-mono text-xs font-bold">
           DZD (DA)

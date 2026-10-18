@@ -15,7 +15,8 @@ import {
   Sparkles,
   LogOut,
   Hammer,
-  Key
+  Key,
+  Store
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { WorkerPermissions } from '../../types/database';
@@ -27,7 +28,8 @@ export type NavView =
   | 'clients' 
   | 'prospects' 
   | 'products' 
-  | 'workers';
+  | 'workers'
+  | 'store';
 
 interface SidebarProps {
   currentView: NavView;
@@ -62,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'prospects', label: 'Pipeline Prospects', icon: TrendingUp, permission: 'canManageProspects' },
     { id: 'products', label: 'Catalogue Portes WPC', icon: Layers },
     { id: 'workers', label: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' },
+    { id: 'store', label: 'Boutique & Atelier', icon: Store },
   ];
 
   // Filter navigation items by active user permissions
