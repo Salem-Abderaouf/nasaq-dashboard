@@ -9,11 +9,13 @@ import { Download, Printer } from 'lucide-react';
 interface TechnicalDrawingsSheetProps {
   doors: DoorConfigItem[];
   info: StudioGeneralInfo;
+  onAddDoor?: () => void;
 }
 
 export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
   doors,
-  info
+  info,
+  onAddDoor
 }) => {
   return (
     <div className="space-y-4">
@@ -69,9 +71,27 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
 
         {/* Doors Grid */}
         {doors.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl text-slate-400">
-            <p className="text-sm font-semibold">Aucune porte configurée.</p>
-            <p className="text-xs mt-1">Ajoutez une porte depuis le panneau latéral pour afficher les plans 2D.</p>
+          <div className="text-center py-20 px-4 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col items-center justify-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-white shadow-sm border border-slate-200 flex items-center justify-center text-3xl">
+              🚪
+            </div>
+            <div className="max-w-md">
+              <h3 className="font-cinzel text-base font-bold text-slate-800">
+                Studio Vierge — Aucune Porte
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Le studio démarre avec un espace de travail vierge. Ajoutez une première porte personnalisée ou chargez une commande enregistrée depuis la base de données.
+              </p>
+            </div>
+            {onAddDoor && (
+              <button
+                type="button"
+                onClick={onAddDoor}
+                className="flex items-center gap-2 px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <span>+</span> Ajouter une Première Porte (P1)
+              </button>
+            )}
           </div>
         ) : (
           <div 

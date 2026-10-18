@@ -3,7 +3,7 @@ import { DoorConfigItem, StudioGeneralInfo } from '../../types/configurator';
 import { COLOR_CATALOG } from '../../data/colors';
 import { PATTERN_CATALOG } from '../../data/patterns';
 import { calculateDoorUnitPrice, calculateDefaultPromoPrice } from '../../utils/pricing';
-import { Client } from '../../types/database';
+import { Client, Order } from '../../types/database';
 import { 
   Plus, 
   Trash2, 
@@ -15,19 +15,21 @@ import {
   ChevronUp, 
   Save, 
   FileArchive,
-  UserCheck
+  UserCheck,
+  FolderOpen
 } from 'lucide-react';
 
 interface ConfigSidebarProps {
   doors: DoorConfigItem[];
   info: StudioGeneralInfo;
   clients: Client[];
+  orders?: Order[];
+  onSelectOrderToEdit?: (orderId: string) => void;
   onUpdateInfo: (updates: Partial<StudioGeneralInfo>) => void;
   onUpdateDoor: (index: number, updates: Partial<DoorConfigItem>) => void;
   onAddDoor: () => void;
   onDeleteDoor: (index: number) => void;
   onResetEmpty: () => void;
-  onReload21: () => void;
   onSaveToSupabase: () => void;
   onDownloadZip: () => void;
   isSaving?: boolean;
@@ -37,12 +39,13 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
   doors,
   info,
   clients,
+  orders = [],
+  onSelectOrderToEdit,
   onUpdateInfo,
   onUpdateDoor,
   onAddDoor,
   onDeleteDoor,
   onResetEmpty,
-  onReload21,
   onSaveToSupabase,
   onDownloadZip,
   isSaving = false
@@ -133,25 +136,74 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         <div className="flex items-center gap-1.5">
           <button 
             type="button"
-            onClick={onReload21}
-            className="text-xs bg-white/10 hover:bg-white/20 text-white font-medium px-2 py-1 rounded transition"
-            title="Recharger le projet des 21 portes"
-          >
-            21 Portes
-          </button>
-          <button 
-            type="button"
             onClick={onResetEmpty}
-            className="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-medium px-2 py-1 rounded transition"
-            title="Réinitialiser le configurateur"
+            className="text-xs bg-white/10 hover:bg-white/20 text-white font-medium px-2.5 py-1 rounded transition flex items-center gap-1"
+            title="Démarrer un nouveau projet vierge"
           >
-            Vider
+            <RotateCcw className="w-3 h-3" />
+            <span>Nouveau Vierge</span>
           </button>
         </div>
       </div>
 
       {/* Scrollable controls */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+        
+        {/* Section 0: Commande DB & Mode Édition */}
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+          <div className="flex justify-between items-center font-bold text-slate-700 uppercase tracking-wider text-[10.5px]">
+            <span className="flex items-center gap-1.5">
+              <FolderOpen className="w-3.5 h-3.5 text-nasaq-teal" />
+              <span>Commande Enregistrée (DB)</span>
+            </span>
+            {info.editingOrderId ? (
+              <span className="text-amber-800 bg-amber-100 border border-amber-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                En Édition
+              </span>
+            ) : (
+              <span className="text-emerald-700 bg-emerald-100 border border-emerald-300 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                Nouveau Vierge
+              </span>
+            )}
+          </div>
+
+          <div>
+            <select
+              value={info.editingOrderId || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  onResetEmpty();
+                } else if (onSelectOrderToEdit) {
+                  onSelectOrderToEdit(val);
+                }
+              }}
+              className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-nasaq-teal text-slate-800 font-medium"
+            >
+              <option value="">-- Démarrer un projet vierge --</option>
+              {orders.map(o => (
+                <option key={o.id} value={o.id}>
+                  {o.order_number} - {o.clients?.name || 'Client'} ({o.total_amount ? Number(o.total_amount).toLocaleString('fr-FR') + ' DA' : '0 DA'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {info.editingOrderId && (
+            <div className="flex items-center justify-between pt-1 border-t border-slate-200">
+              <span className="text-[10px] text-amber-700 font-semibold truncate">
+                Réf: {info.orderNumber || info.docRef}
+              </span>
+              <button
+                type="button"
+                onClick={onResetEmpty}
+                className="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline"
+              >
+                Fermer l'édition
+              </button>
+            </div>
+          )}
+        </div>
         
         {/* Section 1: Dossier & Client Info */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
@@ -715,10 +767,16 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           type="button"
           onClick={onSaveToSupabase}
           disabled={isSaving}
-          className="w-full bg-nasaq-teal hover:bg-nasaq-teal-dark text-white font-bold py-2.5 px-3 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50"
+          className={`w-full font-bold py-2.5 px-3 rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition disabled:opacity-50 text-white ${
+            info.editingOrderId 
+              ? 'bg-amber-600 hover:bg-amber-700' 
+              : 'bg-nasaq-teal hover:bg-nasaq-teal-dark'
+          }`}
         >
           <Save className="w-4 h-4" />
-          {isSaving ? 'Enregistrement dans Supabase...' : 'Enregistrer la Commande dans Supabase'}
+          {isSaving 
+            ? (info.editingOrderId ? 'Mise à jour dans Supabase...' : 'Enregistrement dans Supabase...') 
+            : (info.editingOrderId ? 'Mettre à jour la Commande (Supabase)' : 'Enregistrer la Commande dans Supabase')}
         </button>
         <button
           type="button"

@@ -4,7 +4,7 @@ import { supabase } from '../../api/supabase';
 import { formatMoney, formatDate, getOrderStatusMeta, getPaymentBadge } from '../../utils/formatters';
 import { DoorElevationSVG } from '../2d/DoorElevationSVG';
 import { DoorConfigItem } from '../../types/configurator';
-import { X, Printer, CheckCircle, Ban, Clock, ShoppingBag } from 'lucide-react';
+import { X, Printer, CheckCircle, Ban, Clock, ShoppingBag, Sliders } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface OrderDetailsModalProps {
@@ -12,13 +12,15 @@ interface OrderDetailsModalProps {
   onClose: () => void;
   onRefreshOrder: () => void;
   onRecordPayment: (order: Order) => void;
+  onEditInStudio?: (order: Order) => void;
 }
 
 export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   order,
   onClose,
   onRefreshOrder,
-  onRecordPayment
+  onRecordPayment,
+  onEditInStudio
 }) => {
   if (!order) return null;
 
@@ -26,6 +28,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const canViewFinancials = hasPermission('canViewFinancials');
   const canRecordPayments = hasPermission('canRecordPayments');
   const canChangeOrderStatus = hasPermission('canChangeOrderStatus');
+  const canCreateOrders = hasPermission('canCreateOrders');
   const isAdmin = user?.role === 'admin';
 
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -129,6 +132,21 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {canCreateOrders && onEditInStudio && (
+              <button
+                type="button"
+                onClick={() => {
+                  onEditInStudio(order);
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 bg-nasaq-gold hover:bg-nasaq-gold-dark text-slate-900 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+                title="Modifier les portes et dimensions de cette commande dans le Studio 2D"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Modifier dans le Studio 2D</span>
+                <span className="sm:hidden">Studio 2D</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => window.print()}

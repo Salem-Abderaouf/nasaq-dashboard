@@ -10,18 +10,21 @@ import {
   Plus, 
   RefreshCw, 
   ShoppingBag,
-  Clock
+  Clock,
+  Sliders
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface OrdersListViewProps {
   onOpenConfigurator: () => void;
+  onEditOrderInStudio?: (order: Order) => void;
   onSelectOrder: (order: Order) => void;
   onRecordPayment: (order: Order) => void;
 }
 
 export const OrdersListView: React.FC<OrdersListViewProps> = ({
   onOpenConfigurator,
+  onEditOrderInStudio,
   onSelectOrder,
   onRecordPayment
 }) => {
@@ -283,6 +286,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
+                          {canCreateOrders && onEditOrderInStudio && (
+                            <button
+                              type="button"
+                              onClick={() => onEditOrderInStudio(order)}
+                              className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                              title="Modifier dans le Studio 2D"
+                            >
+                              <Sliders className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => onSelectOrder(order)}

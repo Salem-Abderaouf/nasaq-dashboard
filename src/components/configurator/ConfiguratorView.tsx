@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DoorConfigItem, StudioGeneralInfo } from '../../types/configurator';
-import { DEFAULT_21_DOORS } from '../../data/defaultDoors';
 import { ConfigSidebar } from './ConfigSidebar';
 import { TechnicalDrawingsSheet } from './TechnicalDrawingsSheet';
 import { InvoiceStandardSheet } from './InvoiceStandardSheet';
@@ -8,7 +7,7 @@ import { InvoicePromoSheet } from './InvoicePromoSheet';
 import { InvoiceAtelierSheet } from './InvoiceAtelierSheet';
 import { downloadDossierZIP } from '../../utils/exportUtils';
 import { supabase } from '../../api/supabase';
-import { Client } from '../../types/database';
+import { Client, Order } from '../../types/database';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const STORAGE_KEY_DOORS = 'nasaq_dashboard_doors_state';
@@ -16,32 +15,47 @@ const STORAGE_KEY_INFO = 'nasaq_dashboard_info_state';
 
 interface ConfiguratorViewProps {
   onOrderSaved?: () => void;
+  orderToEdit?: Order | null;
+  onClearOrderToEdit?: () => void;
 }
 
-export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved }) => {
+export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ 
+  onOrderSaved, 
+  orderToEdit,
+  onClearOrderToEdit 
+}) => {
   const [activeTab, setActiveTab] = useState<'drawings' | 'normal' | 'promo' | 'atelier'>('drawings');
+  
+  // Default to empty fresh canvas unless resuming an active editing order
   const [doors, setDoors] = useState<DoorConfigItem[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_DOORS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      const savedInfo = localStorage.getItem(STORAGE_KEY_INFO);
+      const parsedInfo = savedInfo ? JSON.parse(savedInfo) : null;
+      if (parsedInfo?.editingOrderId) {
+        const saved = localStorage.getItem(STORAGE_KEY_DOORS);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
       }
     } catch {}
-    return DEFAULT_21_DOORS;
+    return [];
   });
 
   const [info, setInfo] = useState<StudioGeneralInfo>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_INFO);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.editingOrderId) return parsed;
+      }
     } catch {}
     return {
-      clientName: 'Villa Benali — Oran',
-      docRef: 'NASAQ-2026-001',
+      clientName: '',
+      docRef: `DEV-${Date.now().toString().slice(-4)}`,
       docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-      paidAmount: 250000,
-      isPromoEnabled: true,
+      paidAmount: 0,
+      isPromoEnabled: false,
       isPoseEnabled: true,
       isTransportEnabled: true,
       scale: 0.60,
@@ -50,6 +64,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
   });
 
   const [clients, setClients] = useState<Client[]>([]);
+  const [dbOrders, setDbOrders] = useState<Order[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -65,6 +80,97 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
     }
     loadClients();
   }, []);
+
+  // Fetch registered orders from Supabase for selector
+  const fetchDbOrders = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          clients (name, phone, address),
+          order_items (*)
+        `)
+        .order('created_at', { ascending: false });
+      if (data) setDbOrders(data);
+    } catch (err) {
+      console.warn('Could not fetch registered orders:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDbOrders();
+  }, [fetchDbOrders]);
+
+  // Load registered order from Supabase into studio for editing
+  const loadOrderForEditing = useCallback(async (orderId: string) => {
+    try {
+      const { data: orderData, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          clients (name, phone, address),
+          order_items (*, door_products (*))
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (error || !orderData) {
+        throw (error || new Error('Commande introuvable dans la base de données.'));
+      }
+
+      // Reconstruct DoorConfigItem[] from DB order_items
+      const loadedDoors: DoorConfigItem[] = (orderData.order_items || []).map((item: any, idx: number) => {
+        const cfg = item.configuration || {};
+        return {
+          id: cfg.id || `P${idx + 1}`,
+          heightCm: Number(item.height) || Number(cfg.heightCm) || 210,
+          widthCm: Number(item.width) || Number(cfg.widthCm) || 85,
+          designation: cfg.designation || item.door_products?.name || "Porte d'intérieur WPC",
+          priceNormal: Number(cfg.priceNormal) || Number(item.unit_price) || 39800,
+          pricePromo: Number(cfg.pricePromo) || (cfg.priceNormal ? Number(cfg.priceNormal) - 2800 : Number(item.unit_price)) || 37000,
+          colorId: item.color || cfg.colorId || "chene_bois",
+          patternId: cfg.patternId || "none",
+          doorStructure: (cfg.doorStructure === 'double' ? 'double' : 'single'),
+          leftLeafPercent: cfg.leftLeafPercent ?? 28,
+          hardwareColor: (cfg.hardwareColor === 'chrome' ? 'chrome' : 'black'),
+          glassPanes: Array.isArray(cfg.glassPanes) ? cfg.glassPanes : [],
+          hasRevetment: Boolean(cfg.hasRevetment),
+          revetmentHeightCm: Number(cfg.revetmentHeightCm) || 110,
+        };
+      });
+
+      setDoors(loadedDoors);
+      setInfo({
+        editingOrderId: orderData.id,
+        orderNumber: orderData.order_number,
+        clientName: orderData.clients?.name || '',
+        clientId: orderData.client_id,
+        docRef: orderData.order_number || `CMD-${orderData.id.slice(0, 6)}`,
+        docDate: orderData.created_at 
+          ? new Date(orderData.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+          : new Date().toLocaleDateString('fr-FR'),
+        paidAmount: Number(orderData.paid_amount) || 0,
+        isPromoEnabled: orderData.is_promo_enabled ?? true,
+        isPoseEnabled: orderData.notes ? !orderData.notes.includes('Pose: NON') : true,
+        isTransportEnabled: orderData.notes ? !orderData.notes.includes('Transport: NON') : true,
+        scale: 0.60,
+        gridGap: 20
+      });
+
+      showToast(`Commande ${orderData.order_number} chargée (${loadedDoors.length} portes).`, 'success');
+    } catch (err: any) {
+      console.error('Error loading order for editing:', err);
+      showToast(`Erreur lors du chargement : ${err.message || 'Impossible de charger la commande.'}`, 'error');
+    }
+  }, []);
+
+  // Sync if orderToEdit prop changed
+  useEffect(() => {
+    if (orderToEdit && orderToEdit.id) {
+      loadOrderForEditing(orderToEdit.id);
+    }
+  }, [orderToEdit, loadOrderForEditing]);
 
   // Save to LocalStorage on changes
   useEffect(() => {
@@ -117,32 +223,36 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
   const deleteDoor = (index: number) => {
     setDoors(prev => {
       const copy = prev.filter((_, i) => i !== index);
-      // Re-index IDs
       return copy.map((d, i) => ({ ...d, id: `P${i + 1}` }));
     });
   };
 
+  // Reset to clean fresh canvas
   const resetEmpty = () => {
-    if (confirm('Voulez-vous vider la liste des portes et réinitialiser le dossier ?')) {
-      setDoors([]);
-      updateInfo({ clientName: '', paidAmount: 0, docRef: `NASAQ-${Date.now().toString().slice(-4)}` });
-      showToast('Configurateur réinitialisé.', 'success');
-    }
+    setDoors([]);
+    setInfo({
+      clientName: '',
+      clientId: undefined,
+      editingOrderId: undefined,
+      orderNumber: undefined,
+      docRef: `DEV-${Date.now().toString().slice(-4)}`,
+      docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+      paidAmount: 0,
+      isPromoEnabled: false,
+      isPoseEnabled: true,
+      isTransportEnabled: true,
+      scale: 0.60,
+      gridGap: 20
+    });
+    try {
+      localStorage.removeItem(STORAGE_KEY_DOORS);
+      localStorage.removeItem(STORAGE_KEY_INFO);
+    } catch {}
+    if (onClearOrderToEdit) onClearOrderToEdit();
+    showToast('Projet vierge réinitialisé.', 'success');
   };
 
-  const reload21 = () => {
-    if (confirm('Recharger le projet type des 21 portes WPC ?')) {
-      setDoors(DEFAULT_21_DOORS);
-      updateInfo({
-        clientName: 'Villa Benali — Oran',
-        paidAmount: 250000,
-        isPromoEnabled: true
-      });
-      showToast('Projet 21 portes rechargé !', 'success');
-    }
-  };
-
-  // Save full order to Supabase
+  // Save to Supabase (creates new order or updates existing registered order)
   const handleSaveToSupabase = async () => {
     if (doors.length === 0) {
       alert('Veuillez ajouter au moins une porte avant d\'enregistrer.');
@@ -156,7 +266,6 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
       const clientName = (info.clientName || 'Client Showroom').trim();
 
       if (!clientId) {
-        // Try searching for client by name
         const { data: existing } = await supabase
           .from('clients')
           .select('id')
@@ -166,7 +275,6 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
         if (existing && existing.length > 0) {
           clientId = existing[0].id;
         } else {
-          // Create new client
           const { data: newClient, error: clientErr } = await supabase
             .from('clients')
             .insert({
@@ -189,12 +297,11 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
       if (products && products.length > 0) {
         defaultProductId = products[0].id;
       } else {
-        // Create an initial product catalog entry if empty
         const { data: newProd, error: prodErr } = await supabase
           .from('door_products')
           .insert({
             reference: 'C1',
-            name: 'Porte d\'intérieur WPC Standard',
+            name: "Porte d'intérieur WPC Standard",
             category: 'Bedroom',
             height: 210,
             width: 90,
@@ -218,26 +325,66 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
       const transportCost = info.isTransportEnabled && doors.length > 0 ? 3000 : 0;
       const grandTotal = subtotal + poseCost + transportCost;
 
-      // 3. Insert order
-      const { data: order, error: orderErr } = await supabase
-        .from('orders')
-        .insert({
-          client_id: clientId,
-          status: 'confirmed',
-          total_amount: grandTotal,
-          paid_amount: info.paidAmount,
-          is_promo_enabled: info.isPromoEnabled,
-          notes: `Généré via Studio Configuration. Réf: ${info.docRef}. Pose: ${info.isPoseEnabled ? 'OUI' : 'NON'}, Transport: ${info.isTransportEnabled ? 'OUI' : 'NON'}`
-        })
-        .select()
-        .single();
+      const orderNotes = `Généré via Studio Configuration. Réf: ${info.docRef}. Pose: ${info.isPoseEnabled ? 'OUI' : 'NON'}, Transport: ${info.isTransportEnabled ? 'OUI' : 'NON'}`;
 
-      if (orderErr) throw orderErr;
+      let targetOrderId = info.editingOrderId;
+      let orderNumber = info.orderNumber;
 
-      // 4. Insert items
-      if (defaultProductId) {
+      if (info.editingOrderId) {
+        // UPDATE existing order in Supabase
+        const { data: updatedOrder, error: updateErr } = await supabase
+          .from('orders')
+          .update({
+            client_id: clientId,
+            total_amount: grandTotal,
+            paid_amount: info.paidAmount,
+            is_promo_enabled: info.isPromoEnabled,
+            notes: orderNotes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', info.editingOrderId)
+          .select()
+          .single();
+
+        if (updateErr) throw updateErr;
+        orderNumber = updatedOrder.order_number;
+
+        // Delete old order_items and replace with updated doors
+        await supabase.from('order_items').delete().eq('order_id', info.editingOrderId);
+      } else {
+        // INSERT new order in Supabase
+        const { data: newOrder, error: orderErr } = await supabase
+          .from('orders')
+          .insert({
+            client_id: clientId,
+            status: 'confirmed',
+            total_amount: grandTotal,
+            paid_amount: info.paidAmount,
+            is_promo_enabled: info.isPromoEnabled,
+            notes: orderNotes
+          })
+          .select()
+          .single();
+
+        if (orderErr) throw orderErr;
+        targetOrderId = newOrder.id;
+        orderNumber = newOrder.order_number;
+
+        // If deposit entered for new order, record payment
+        if (info.paidAmount > 0) {
+          await supabase.from('order_payments').insert({
+            order_id: newOrder.id,
+            amount: info.paidAmount,
+            notes: `Acompte versé à la commande (${info.docRef})`,
+            status: 'successful'
+          });
+        }
+      }
+
+      // Insert updated door items
+      if (defaultProductId && targetOrderId) {
         const orderItemsPayload = doors.map(d => ({
-          order_id: order.id,
+          order_id: targetOrderId,
           product_id: defaultProductId,
           quantity: 1,
           unit_price: info.isPromoEnabled ? d.pricePromo : d.priceNormal,
@@ -256,17 +403,8 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
         if (itemsErr) console.warn('Order items insert error:', itemsErr);
       }
 
-      // 5. If deposit/paid amount entered, register payment
-      if (info.paidAmount > 0) {
-        await supabase.from('order_payments').insert({
-          order_id: order.id,
-          amount: info.paidAmount,
-          notes: `Acompte versé à la commande (${info.docRef})`,
-          status: 'successful'
-        });
-      }
-
-      showToast(`Commande ${order.order_number || info.docRef} enregistrée dans Supabase avec succès !`, 'success');
+      showToast(`Commande ${orderNumber || info.docRef} ${info.editingOrderId ? 'mise à jour' : 'enregistrée'} avec succès dans Supabase !`, 'success');
+      fetchDbOrders();
       if (onOrderSaved) onOrderSaved();
     } catch (err: any) {
       console.error('Supabase Save Error:', err);
@@ -316,12 +454,13 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
         doors={doors}
         info={info}
         clients={clients}
+        orders={dbOrders}
+        onSelectOrderToEdit={loadOrderForEditing}
         onUpdateInfo={updateInfo}
         onUpdateDoor={updateDoor}
         onAddDoor={addDoor}
         onDeleteDoor={deleteDoor}
         onResetEmpty={resetEmpty}
-        onReload21={reload21}
         onSaveToSupabase={handleSaveToSupabase}
         onDownloadZip={handleDownloadZip}
         isSaving={isSaving}
@@ -330,6 +469,27 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
       {/* RIGHT MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-100">
         
+        {/* Active Edit Mode Alert Banner */}
+        {info.editingOrderId && (
+          <div className="bg-amber-500 text-slate-900 px-4 py-2 flex items-center justify-between text-xs font-semibold shadow-xs border-b border-amber-600 no-print shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="bg-slate-900 text-amber-400 font-mono px-2 py-0.5 rounded text-[10px] font-bold tracking-wider">
+                MODE MODIFICATION COMMANDE
+              </span>
+              <span>
+                Commande : <strong className="font-mono">{info.orderNumber || info.docRef}</strong> — Client : <strong>{info.clientName || 'Inconnu'}</strong> ({doors.length} porte{doors.length > 1 ? 's' : ''})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={resetEmpty}
+              className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded text-[11px] font-bold transition flex items-center gap-1 shadow-2xs"
+            >
+              <span>✕</span> Quitter et Nouveau Vierge
+            </button>
+          </div>
+        )}
+
         {/* Sticky Tabs Navigation */}
         <nav className="sticky top-0 z-30 bg-nasaq-teal shadow-md border-b border-white/10 no-print">
           <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 p-2 px-4 overflow-x-auto">
@@ -388,7 +548,11 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ onOrderSaved
         {/* Tab Content Panels */}
         <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-16">
           {activeTab === 'drawings' && (
-            <TechnicalDrawingsSheet doors={doors} info={info} />
+            <TechnicalDrawingsSheet 
+              doors={doors} 
+              info={info} 
+              onAddDoor={addDoor}
+            />
           )}
 
           {activeTab === 'normal' && (

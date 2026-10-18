@@ -27,6 +27,7 @@ const DashboardLayout: React.FC = () => {
   // Modals state
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentModalOrder, setPaymentModalOrder] = useState<Order | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
 
   // Auto-redirect if worker lands on or attempts to view a restricted tab
@@ -156,12 +157,21 @@ const DashboardLayout: React.FC = () => {
   };
 
   const handleStartOrderForClient = (client: Client) => {
+    setOrderToEdit(null);
     try {
-      const savedInfo = localStorage.getItem('nasaq_dashboard_info_state');
-      let current = savedInfo ? JSON.parse(savedInfo) : {};
-      current.clientName = client.name;
-      current.clientId = client.id;
-      localStorage.setItem('nasaq_dashboard_info_state', JSON.stringify(current));
+      localStorage.setItem('nasaq_dashboard_info_state', JSON.stringify({
+        clientName: client.name,
+        clientId: client.id,
+        docRef: `DEV-${Date.now().toString().slice(-4)}`,
+        docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
+        paidAmount: 0,
+        isPromoEnabled: false,
+        isPoseEnabled: true,
+        isTransportEnabled: true,
+        scale: 0.60,
+        gridGap: 20
+      }));
+      localStorage.setItem('nasaq_dashboard_doors_state', JSON.stringify([]));
     } catch {}
     setCurrentView('configurator');
   };
@@ -198,12 +208,26 @@ const DashboardLayout: React.FC = () => {
           )}
 
           {currentView === 'configurator' && hasPermission('canCreateOrders') && (
-            <ConfiguratorView onOrderSaved={() => setCurrentView('orders')} />
+            <ConfiguratorView 
+              onOrderSaved={() => {
+                setOrderToEdit(null);
+                setCurrentView('orders');
+              }}
+              orderToEdit={orderToEdit}
+              onClearOrderToEdit={() => setOrderToEdit(null)}
+            />
           )}
 
           {currentView === 'orders' && hasPermission('canViewOrders') && (
             <OrdersListView
-              onOpenConfigurator={() => setCurrentView('configurator')}
+              onOpenConfigurator={() => {
+                setOrderToEdit(null);
+                setCurrentView('configurator');
+              }}
+              onEditOrderInStudio={(order) => {
+                setOrderToEdit(order);
+                setCurrentView('configurator');
+              }}
               onSelectOrder={setSelectedOrder}
               onRecordPayment={setPaymentModalOrder}
             />
@@ -246,6 +270,10 @@ const DashboardLayout: React.FC = () => {
             // refresh
           }}
           onRecordPayment={(ord) => setPaymentModalOrder(ord)}
+          onEditInStudio={(order) => {
+            setOrderToEdit(order);
+            setCurrentView('configurator');
+          }}
         />
       )}
 

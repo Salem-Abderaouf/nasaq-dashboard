@@ -49,4 +49,6 @@ export interface StudioGeneralInfo {
   isTransportEnabled: boolean;
   scale: number;
   gridGap: number;
+  editingOrderId?: string;
+  orderNumber?: string;
 }
