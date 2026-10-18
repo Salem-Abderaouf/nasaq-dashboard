@@ -101,7 +101,18 @@ export const InvoicePromoSheet: React.FC<InvoicePromoSheetProps> = ({
               <div className="font-bold text-slate-800 text-sm mt-0.5">
                 {info.clientName || 'Nouveau Client'}
               </div>
-              <div className="text-xs text-slate-500">Projet Résidentiel</div>
+              {info.clientPhone && (
+                <div className="text-xs text-slate-700 font-mono mt-0.5">
+                  Tél : {info.clientPhone}
+                </div>
+              )}
+              {info.clientAddress ? (
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  {info.clientAddress}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500">Projet Résidentiel</div>
+              )}
             </div>
           </div>
         </div>

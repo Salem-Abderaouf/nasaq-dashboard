@@ -41,6 +41,8 @@ export interface PatternCatalogItem {
 export interface StudioGeneralInfo {
   clientName: string;
   clientId?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   docRef: string;
   docDate: string;
   paidAmount: number;

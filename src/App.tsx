@@ -163,7 +163,9 @@ const DashboardLayout: React.FC = () => {
       localStorage.setItem('nasaq_dashboard_info_state', JSON.stringify({
         clientName: client.name,
         clientId: client.id,
-        docRef: `DEV-${Date.now().toString().slice(-4)}`,
+        clientPhone: client.phone || '',
+        clientAddress: client.address || '',
+        docRef: '',
         docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
         paidAmount: 0,
         isPromoEnabled: false,

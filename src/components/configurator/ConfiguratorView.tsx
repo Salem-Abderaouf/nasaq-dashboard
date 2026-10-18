@@ -54,7 +54,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
     } catch {}
     return {
       clientName: '',
-      docRef: `DEV-${Date.now().toString().slice(-4)}`,
+      docRef: '',
       docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
       paidAmount: 0,
       isPromoEnabled: false,
@@ -70,18 +70,54 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Fetch clients from Supabase
-  useEffect(() => {
-    async function loadClients() {
-      try {
-        const { data } = await supabase.from('clients').select('*').order('name');
-        if (data) setClients(data);
-      } catch (err) {
-        console.warn('Could not fetch clients from Supabase:', err);
+  // Load next DB order sequence number
+  const fetchNextOrderNumber = useCallback(async (): Promise<string> => {
+    try {
+      const { data, error } = await supabase.rpc('get_next_order_number');
+      if (data && !error && typeof data === 'string') {
+        return data;
       }
+    } catch (e) {
+      console.warn('Could not fetch next order number from RPC:', e);
     }
-    loadClients();
+    // Fallback: query last registered order
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('order_number')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data && data[0]?.order_number) {
+        const parts = data[0].order_number.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10) || 1000;
+        return `ORD-${new Date().getFullYear()}-${String(lastSeq + 1).padStart(5, '0')}`;
+      }
+    } catch {}
+    return `ORD-${new Date().getFullYear()}-01010`;
   }, []);
+
+  // Fetch clients from Supabase
+  const loadClients = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('clients').select('*').order('name');
+      if (data && !error) setClients(data);
+    } catch (err) {
+      console.warn('Could not fetch clients from Supabase:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadClients();
+  }, [loadClients]);
+
+  // Auto-sync next order number from DB if starting a new blank order
+  useEffect(() => {
+    if (!info.editingOrderId && (!info.docRef || info.docRef.startsWith('DEV-') || !info.docRef.startsWith('ORD-'))) {
+      fetchNextOrderNumber().then(num => {
+        setInfo(prev => ({ ...prev, docRef: num }));
+      });
+    }
+  }, [info.editingOrderId, info.docRef, fetchNextOrderNumber]);
 
   // Fetch registered orders from Supabase for selector
   const fetchDbOrders = useCallback(async () => {
@@ -148,7 +184,9 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         orderNumber: orderData.order_number,
         clientName: orderData.clients?.name || '',
         clientId: orderData.client_id,
-        docRef: orderData.order_number || `CMD-${orderData.id.slice(0, 6)}`,
+        clientPhone: orderData.clients?.phone || '',
+        clientAddress: orderData.clients?.address || '',
+        docRef: orderData.order_number || `ORD-${orderData.id.slice(0, 8)}`,
         docDate: orderData.created_at 
           ? new Date(orderData.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
           : new Date().toLocaleDateString('fr-FR'),
@@ -230,14 +268,17 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
   };
 
   // Reset to clean fresh canvas
-  const resetEmpty = () => {
+  const resetEmpty = async () => {
+    const nextNum = await fetchNextOrderNumber();
     setDoors([]);
     setInfo({
       clientName: '',
       clientId: undefined,
+      clientPhone: undefined,
+      clientAddress: undefined,
       editingOrderId: undefined,
       orderNumber: undefined,
-      docRef: `DEV-${Date.now().toString().slice(-4)}`,
+      docRef: nextNum,
       docDate: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
       paidAmount: 0,
       isPromoEnabled: false,
@@ -251,7 +292,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
       localStorage.removeItem(STORAGE_KEY_INFO);
     } catch {}
     if (onClearOrderToEdit) onClearOrderToEdit();
-    showToast('Projet vierge réinitialisé.', 'success');
+    showToast(`Nouveau projet vierge initialisé (${nextNum}).`, 'success');
   };
 
   // Save to Supabase (creates new order or updates existing registered order)
@@ -372,12 +413,19 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         targetOrderId = newOrder.id;
         orderNumber = newOrder.order_number;
 
+        setInfo(prev => ({
+          ...prev,
+          editingOrderId: newOrder.id,
+          orderNumber: newOrder.order_number,
+          docRef: newOrder.order_number
+        }));
+
         // If deposit entered for new order, record payment
         if (info.paidAmount > 0) {
           await supabase.from('order_payments').insert({
             order_id: newOrder.id,
             amount: info.paidAmount,
-            notes: `Acompte versé à la commande (${info.docRef})`,
+            notes: `Acompte versé à la commande (${newOrder.order_number || info.docRef})`,
             status: 'successful'
           });
         }
@@ -458,6 +506,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         clients={clients}
         orders={dbOrders}
         onSelectOrderToEdit={loadOrderForEditing}
+        onRefreshClients={loadClients}
         onUpdateInfo={updateInfo}
         onUpdateDoor={updateDoor}
         onAddDoor={addDoor}

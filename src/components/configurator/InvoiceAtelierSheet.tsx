@@ -88,7 +88,17 @@ export const InvoiceAtelierSheet: React.FC<InvoiceAtelierSheetProps> = ({
               <div className="font-bold text-slate-800 text-sm mt-0.5">
                 {info.clientName || 'Nouveau Client'}
               </div>
-              <div className="text-xs text-slate-500">Nombre d'éléments : {doors.length} porte{doors.length > 1 ? 's' : ''}</div>
+              {info.clientPhone && (
+                <div className="text-xs text-slate-600 font-mono mt-0.5">
+                  Contact : {info.clientPhone}
+                </div>
+              )}
+              {info.clientAddress && (
+                <div className="text-[11px] text-slate-600 mt-0.5">
+                  Chantier : {info.clientAddress}
+                </div>
+              )}
+              <div className="text-xs text-slate-500 mt-0.5">Nombre d'éléments : {doors.length} porte{doors.length > 1 ? 's' : ''}</div>
             </div>
           </div>
         </div>
