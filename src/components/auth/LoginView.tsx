@@ -49,16 +49,16 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-radial from-nasaq-teal to-nasaq-dark p-4 select-none">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden relative">
+    <div className="min-h-screen w-screen flex items-center justify-center bg-slate-100 p-4 select-none">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden relative">
         
-        {/* Top Decorative Header */}
-        <div className="bg-gradient-to-r from-nasaq-teal-dark via-nasaq-teal to-nasaq-dark p-6 text-center text-white relative">
-          <div className="w-20 h-20 bg-white rounded-2xl p-2 mx-auto shadow-md flex items-center justify-center mb-3">
+        {/* Top Brand Header */}
+        <div className="bg-nasaq-dark p-6 text-center text-white relative">
+          <div className="w-16 h-16 bg-white rounded-xl p-1.5 mx-auto shadow-xs flex items-center justify-center mb-3">
             <img 
               src="/nasaq-logo-cropped.png" 
               alt="NASAQ WPC" 
-              className="h-14 w-auto object-contain" 
+              className="h-11 w-auto object-contain" 
             />
           </div>
           <h1 className="font-cinzel text-xl font-bold tracking-wider">
@@ -67,7 +67,7 @@ export const LoginView: React.FC = () => {
           <p className="text-[11px] text-nasaq-gold-light uppercase tracking-widest font-semibold mt-0.5">
             Portes & Menuiserie Haute Résistance
           </p>
-          <div className="text-xs text-slate-300 mt-2 font-medium">
+          <div className="text-xs text-slate-300 mt-1 font-medium">
             Plateforme de Gestion & Atelier
           </div>
         </div>
