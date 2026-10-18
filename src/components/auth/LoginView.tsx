@@ -93,7 +93,7 @@ export const LoginView: React.FC = () => {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="admin@nasaq.com ou email employé"
+                  placeholder="jolylip@gmail.com ou email employé"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition"
                 />
               </div>
@@ -158,7 +158,7 @@ export const LoginView: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-slate-800">Direction Générale (Admin)</div>
-                    <div className="text-[10px] text-slate-500">Accès total : finances, RH & salaires, paramètres</div>
+                    <div className="text-[10px] text-slate-500 font-mono">jolylip@gmail.com • Accès total</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-nasaq-gold-dark group-hover:translate-x-0.5 transition font-mono">

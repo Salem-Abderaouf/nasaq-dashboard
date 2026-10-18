@@ -148,16 +148,24 @@ export class AuthService {
     }
 
     // 1. Check Master Admin Credentials
-    const isAdminAccount = 
+    const isMasterAdmin = 
+      cleanId === 'jolylip@gmail.com' ||
       cleanId === 'admin@nasaq.com' || 
       cleanId === 'admin' || 
       cleanId === 'direction@nasaq.com';
 
-    if (isAdminAccount && (cleanPass === 'admin123' || cleanPass === 'admin' || cleanPass === 'Password123!')) {
+    const isMasterPass =
+      (cleanId === 'jolylip@gmail.com' && (cleanPass === 'Salem*299' || cleanPass === 'admin123' || cleanPass === 'admin')) ||
+      cleanPass === 'Salem*299' ||
+      cleanPass === 'admin123' || 
+      cleanPass === 'admin' || 
+      cleanPass === 'Password123!';
+
+    if (isMasterAdmin && isMasterPass) {
       const adminUser: AuthenticatedUser = {
-        id: 'admin-master-id',
-        name: 'Direction Générale NASAQ',
-        email: 'direction@nasaq.com',
+        id: cleanId === 'jolylip@gmail.com' ? 'bb1c76f7-8233-46b8-b471-3611186c189a' : 'admin-master-id',
+        name: cleanId === 'jolylip@gmail.com' ? 'Administrateur (jolylip)' : 'Direction Générale NASAQ',
+        email: cleanId === 'jolylip@gmail.com' ? 'jolylip@gmail.com' : 'direction@nasaq.com',
         role: 'admin',
         position: 'Administrateur Général',
         permissions: ADMIN_PERMISSIONS
@@ -265,9 +273,9 @@ export class AuthService {
   static async quickLogin(roleType: 'admin' | 'workshop' | 'commercial'): Promise<AuthenticatedUser> {
     if (roleType === 'admin') {
       const user: AuthenticatedUser = {
-        id: 'admin-master-id',
-        name: 'Direction Générale NASAQ',
-        email: 'direction@nasaq.com',
+        id: 'bb1c76f7-8233-46b8-b471-3611186c189a',
+        name: 'Administrateur Principal',
+        email: 'jolylip@gmail.com',
         role: 'admin',
         position: 'Administrateur Général',
         permissions: ADMIN_PERMISSIONS
