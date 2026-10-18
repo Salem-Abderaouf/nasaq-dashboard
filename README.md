@@ -77,22 +77,22 @@ Application web moderne développée avec **React 18**, **TypeScript**, **Vite**
 
 ---
 
-## 🚀 Démarrage du Projet
+## 🚀 Démarrage du Projet (avec Bun)
 
 ### Installation des dépendances
 ```bash
-npm install
+bun install
 ```
 
 ### Lancement du serveur de développement
 ```bash
-npm run dev
+bun run dev
 ```
 L'application démarre sur `http://localhost:3000`.
 
 ### Compilation de production
 ```bash
-npm run build
+bun run build
 ```
 
 ---
