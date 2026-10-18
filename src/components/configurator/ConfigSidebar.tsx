@@ -125,8 +125,8 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
       {/* Brand Header */}
       <div className="bg-gradient-to-r from-nasaq-teal-dark to-nasaq-teal p-3.5 px-4 flex items-center justify-between border-b-2 border-nasaq-gold text-white">
         <div className="flex items-center gap-2.5">
-          <div className="bg-white text-nasaq-teal font-extrabold px-2.5 py-1 rounded text-sm tracking-wider font-cinzel shadow">
-            NASAQ WPC
+          <div className="bg-white rounded-md p-1 px-1.5 flex items-center justify-center shadow">
+            <img src="/nasaq-logo-cropped.png" alt="NASAQ Logo" className="h-7 w-auto object-contain" />
           </div>
           <span className="text-xs text-nasaq-gold-light font-semibold">Studio Portes</span>
         </div>

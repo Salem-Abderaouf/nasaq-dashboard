@@ -68,10 +68,8 @@ export const InvoicePromoSheet: React.FC<InvoicePromoSheetProps> = ({
         <div className="flex flex-wrap justify-between items-start border-b-2 border-nasaq-teal-subtle pb-6 mb-8 gap-6">
           {/* Brand */}
           <div className="max-w-sm">
-            <div className="flex items-center gap-3 mb-1">
-              <span className="font-cinzel text-2xl font-extrabold text-nasaq-teal tracking-wider">
-                NASAQ <span className="text-nasaq-gold">نسق</span>
-              </span>
+            <div className="mb-2">
+              <img src="/nasaq-logo-cropped.png" alt="NASAQ (نسق) WPC" className="h-14 w-auto object-contain" />
             </div>
             <div className="text-nasaq-gold text-xs font-bold uppercase tracking-widest mb-2">
               WPC Door Solutions & Menuiserie Moderne

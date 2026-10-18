@@ -57,12 +57,12 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
               Dossier : {info.clientName || 'Nouveau Client'} | Réf : {info.docRef}
             </div>
           </div>
-          <div className="text-right">
-            <div className="font-cinzel font-extrabold text-nasaq-teal text-base">
-              NASAQ <span className="text-nasaq-gold">نسق</span>
-            </div>
-            <div className="text-[11px] font-mono text-slate-500 mt-0.5">
-              Date : {info.docDate} • {doors.length} Porte{doors.length > 1 ? 's' : ''}
+          <div className="flex items-center gap-3">
+            <img src="/nasaq-logo-cropped.png" alt="NASAQ WPC" className="h-11 w-auto object-contain" />
+            <div className="text-right">
+              <div className="text-[11px] font-mono text-slate-500">
+                Date : {info.docDate} • {doors.length} Porte{doors.length > 1 ? 's' : ''}
+              </div>
             </div>
           </div>
         </div>

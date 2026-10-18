@@ -49,13 +49,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between no-print z-10 shrink-0 shadow-2xs">
-      <div>
-        <h1 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2">
-          {currentMeta.title}
-        </h1>
-        <p className="text-[11px] text-slate-500 hidden sm:block">
-          {currentMeta.subtitle}
-        </p>
+      <div className="flex items-center gap-3">
+        <img src="/nasaq-logo-transparent.png" alt="NASAQ" className="h-8 w-auto object-contain hidden sm:block" />
+        <div>
+          <h1 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2">
+            {currentMeta.title}
+          </h1>
+          <p className="text-[11px] text-slate-500 hidden sm:block">
+            {currentMeta.subtitle}
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

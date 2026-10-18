@@ -57,10 +57,8 @@ export const InvoiceAtelierSheet: React.FC<InvoiceAtelierSheetProps> = ({
         {/* Header */}
         <div className="flex flex-wrap justify-between items-start border-b-2 border-slate-200 pb-6 mb-8 gap-6">
           <div className="max-w-sm">
-            <div className="flex items-center gap-3 mb-1">
-              <span className="font-cinzel text-2xl font-extrabold text-slate-800 tracking-wider">
-                NASAQ <span className="text-nasaq-gold">نسق</span>
-              </span>
+            <div className="mb-2">
+              <img src="/nasaq-logo-cropped.png" alt="NASAQ (نسق) WPC" className="h-14 w-auto object-contain" />
             </div>
             <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-2">
               Atelier de Fabrication & Débit CNC

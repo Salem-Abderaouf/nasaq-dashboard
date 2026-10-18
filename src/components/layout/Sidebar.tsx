@@ -66,23 +66,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
         {!collapsed && (
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-nasaq-gold flex items-center justify-center font-cinzel font-extrabold text-white text-base shadow">
-              N
+            <div className="bg-white rounded-lg p-1 px-2 flex items-center justify-center shadow-xs shrink-0">
+              <img src="/nasaq-logo-cropped.png" alt="NASAQ WPC" className="h-8 w-auto object-contain" />
             </div>
             <div className="leading-tight">
-              <span className="font-cinzel font-bold text-sm tracking-wider text-white block">
-                NASAQ <span className="text-nasaq-gold font-normal">نسق</span>
+              <span className="font-cinzel font-bold text-xs tracking-wider text-white block">
+                NASAQ <span className="text-nasaq-gold font-normal">WPC</span>
               </span>
-              <span className="text-[10px] text-nasaq-gold-light tracking-wide uppercase font-semibold">
-                Portes WPC Admin
+              <span className="text-[9.5px] text-nasaq-gold-light tracking-wide uppercase font-semibold">
+                Portes & Menuiserie
               </span>
             </div>
           </div>
         )}
 
         {collapsed && (
-          <div className="w-10 h-10 rounded-lg bg-nasaq-gold flex items-center justify-center font-cinzel font-extrabold text-white text-lg mx-auto shadow">
-            N
+          <div className="bg-white rounded-lg p-1 flex items-center justify-center shadow mx-auto">
+            <img src="/nasaq-logo-cropped.png" alt="NASAQ" className="h-7 w-auto object-contain" />
           </div>
         )}
 
