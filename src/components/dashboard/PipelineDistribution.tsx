@@ -68,7 +68,7 @@ export const PipelineDistribution: React.FC<PipelineDistributionProps> = ({
       </div>
 
       {/* Stage Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 pt-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9 gap-2.5 pt-1">
         {STAGES.map(stage => {
           const count = statusCounts[stage] || 0;
           const meta = getOrderStatusMeta(stage);
@@ -77,17 +77,17 @@ export const PipelineDistribution: React.FC<PipelineDistributionProps> = ({
             <div
               key={stage}
               onClick={() => onSelectStatus && onSelectStatus(stage)}
-              className={`p-2.5 rounded-xl border border-slate-200/80 hover:border-nasaq-teal transition cursor-pointer flex flex-col justify-between ${
-                count > 0 ? 'bg-slate-50/70' : 'bg-white opacity-60'
+              className={`p-3 rounded-xl border border-slate-200/80 hover:border-nasaq-teal transition cursor-pointer flex flex-col justify-between min-w-0 ${
+                count > 0 ? 'bg-slate-50/70 hover:bg-white shadow-2xs' : 'bg-white opacity-60'
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className={`w-2 h-2 rounded-full ${meta.dot}`}></span>
-                <span className="text-[10px] font-bold text-slate-700 truncate" title={meta.label}>
+              <div className="flex items-center gap-1.5 mb-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`}></span>
+                <span className="text-[10.5px] font-bold text-slate-700 truncate leading-tight" title={meta.label}>
                   {meta.label}
                 </span>
               </div>
-              <div className="font-mono text-base font-extrabold text-slate-900 text-right">
+              <div className="font-mono text-lg font-extrabold text-slate-900 text-right">
                 {count}
               </div>
             </div>
