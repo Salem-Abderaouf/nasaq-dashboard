@@ -597,8 +597,8 @@ export const WorkersPayrollView: React.FC = () => {
                 <label className="block font-semibold text-slate-600 mb-1">Montant (DA) *</label>
                 <input 
                   type="number"
-                  min={500}
-                  step={500}
+                  min={1}
+                  step="any"
                   required
                   value={adjAmount}
                   onChange={(e) => setAdjAmount(Number(e.target.value) || 0)}
@@ -705,7 +705,8 @@ export const WorkersPayrollView: React.FC = () => {
                   <label className="block font-semibold text-slate-600 mb-1">Salaire de Base (DA) *</label>
                   <input 
                     type="number"
-                    step={1000}
+                    min={1}
+                    step="any"
                     required
                     value={baseSalary}
                     onChange={(e) => setBaseSalary(Number(e.target.value) || 0)}

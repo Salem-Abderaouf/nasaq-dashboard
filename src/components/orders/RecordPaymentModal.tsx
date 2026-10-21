@@ -18,7 +18,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   if (!order) return null;
 
   const remaining = Math.max(0, order.total_amount - order.paid_amount);
-  const [amount, setAmount] = useState<number>(remaining || 10000);
+  const [amount, setAmount] = useState<string | number>(remaining > 0 ? remaining : 10000);
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('Versement acompte / règlement');
   const [loading, setLoading] = useState<boolean>(false);
@@ -26,8 +26,10 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount <= 0) {
-      setError('Le montant doit être supérieur à 0.');
+    const numericAmount = typeof amount === 'number' ? amount : parseFloat(amount);
+
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      setError('Le montant doit être un nombre valide supérieur à 0.');
       return;
     }
 
@@ -36,7 +38,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     try {
       const { error: payErr } = await supabase.from('order_payments').insert({
         order_id: order.id,
-        amount: amount,
+        amount: numericAmount,
         payment_date: paymentDate,
         notes: notes,
         status: 'successful'
@@ -103,16 +105,60 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-600 mb-1">Montant à Encaisser (DA) *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-semibold text-slate-600">Montant à Encaisser (DA) *</label>
+              {remaining > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAmount(remaining)}
+                  className="text-[10.5px] font-bold text-nasaq-teal hover:underline"
+                >
+                  Tout solder ({formatMoney(remaining)})
+                </button>
+              )}
+            </div>
             <input 
               type="number"
               min={1}
-              step={500}
+              step="any"
               required
+              placeholder="ex: 10000"
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value) || 0)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg font-mono font-bold text-nasaq-teal focus:border-nasaq-teal focus:outline-none"
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg font-mono font-bold text-nasaq-teal focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none"
             />
+
+            {/* Quick preset amount buttons */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {remaining > 0 && remaining !== 10000 && (
+                <button
+                  type="button"
+                  onClick={() => setAmount(remaining)}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-nasaq-teal hover:text-white text-slate-700 font-mono text-[10.5px] font-semibold border border-slate-200 transition"
+                >
+                  Solde ({formatMoney(remaining)})
+                </button>
+              )}
+              {remaining > 0 && Math.round(remaining / 2) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAmount(Math.round(remaining / 2))}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-nasaq-teal hover:text-white text-slate-700 font-mono text-[10.5px] font-semibold border border-slate-200 transition"
+                >
+                  50% ({formatMoney(Math.round(remaining / 2))})
+                </button>
+              )}
+              {[10000, 20000, 50000].map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setAmount(val)}
+                  className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-[10.5px] border border-slate-200 transition"
+                >
+                  {val.toLocaleString('fr-FR')} DA
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

@@ -622,7 +622,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             <input 
               type="number"
               min={0}
-              step={500}
+              step="any"
               value={info.paidAmount}
               onChange={(e) => onUpdateInfo({ paidAmount: Number(e.target.value) || 0 })}
               className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-nasaq-teal font-mono font-bold text-nasaq-blue"
@@ -970,7 +970,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       <span className="text-[9px] text-slate-400">Prix Unitaire (DA)</span>
                       <input 
                         type="number"
-                        step={500}
+                        step="any"
                         value={door.priceNormal}
                         onChange={(e) => onUpdateDoor(index, { priceNormal: Number(e.target.value) || 0 })}
                         className="w-full px-2 py-1 text-xs border border-slate-300 rounded bg-white font-mono font-bold"
@@ -981,7 +981,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                         <span className="text-[9px] text-amber-700 font-semibold">Prix Promo (DA)</span>
                         <input 
                           type="number"
-                          step={500}
+                          step="any"
                           value={door.pricePromo}
                           onChange={(e) => onUpdateDoor(index, { pricePromo: Number(e.target.value) || 0 })}
                           className="w-full px-2 py-1 text-xs border border-amber-300 rounded bg-white font-mono font-bold text-amber-800"
