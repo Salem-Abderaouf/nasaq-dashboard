@@ -30,6 +30,7 @@ const DashboardLayout: React.FC = () => {
   const [paymentModalOrder, setPaymentModalOrder] = useState<Order | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   // Auto-redirect if worker lands on or attempts to view a restricted tab
   useEffect(() => {
@@ -203,6 +204,7 @@ const DashboardLayout: React.FC = () => {
         <main className="flex-1 overflow-y-auto">
           {currentView === 'dashboard' && hasPermission('canViewDashboard') && (
             <DashboardView
+              key={ordersRefreshKey}
               onNavigate={setCurrentView}
               onSelectOrder={setSelectedOrder}
               onRecordPayment={setPaymentModalOrder}
@@ -214,6 +216,7 @@ const DashboardLayout: React.FC = () => {
             <ConfiguratorView 
               onOrderSaved={() => {
                 setOrderToEdit(null);
+                setOrdersRefreshKey(k => k + 1);
                 setCurrentView('orders');
               }}
               orderToEdit={orderToEdit}
@@ -223,6 +226,7 @@ const DashboardLayout: React.FC = () => {
 
           {currentView === 'orders' && hasPermission('canViewOrders') && (
             <OrdersListView
+              key={ordersRefreshKey}
               onOpenConfigurator={() => {
                 setOrderToEdit(null);
                 setCurrentView('configurator');
@@ -270,7 +274,11 @@ const DashboardLayout: React.FC = () => {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onRefreshOrder={() => {
-            // refresh
+            setOrdersRefreshKey(k => k + 1);
+          }}
+          onDeleteOrder={() => {
+            setSelectedOrder(null);
+            setOrdersRefreshKey(k => k + 1);
           }}
           onRecordPayment={(ord) => setPaymentModalOrder(ord)}
           onEditInStudio={(order) => {
@@ -286,6 +294,7 @@ const DashboardLayout: React.FC = () => {
           onClose={() => setPaymentModalOrder(null)}
           onSuccess={() => {
             setSelectedOrder(null);
+            setOrdersRefreshKey(k => k + 1);
           }}
         />
       )}

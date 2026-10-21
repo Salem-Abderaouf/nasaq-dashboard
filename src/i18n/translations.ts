@@ -131,6 +131,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.noOrdersFound': 'Aucune commande trouvée correspondant aux critères.',
     'orders.promoActive': 'Promo Active',
     'orders.notPriced': 'Non Chiffré',
+    'orders.deleteOrder': 'Supprimer la commande',
+    'orders.deleteConfirmTitle': 'Supprimer la Commande',
+    'orders.deleteConfirmPrompt': 'Êtes-vous sûr de vouloir supprimer définitivement la commande',
+    'orders.deleteWarning': 'Cette action est irréversible. Toutes les portes configurées, fiches de débit d\'atelier et versements liés à cette commande seront définitivement effacés.',
+    'orders.deleteWarningPaid': 'Cette commande comprend un montant encaissé de',
+    'orders.deleteSuccess': 'Commande supprimée avec succès.',
+    'orders.deleteError': 'Erreur lors de la suppression de la commande.',
+    'orders.deleting': 'Suppression en cours...',
+    'orders.confirmDeleteBtn': 'Supprimer Définitivement',
 
     // Clients CRM
     'clients.title': 'Répertoire Clients & Suivi des Comptes',
@@ -679,6 +688,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.noOrdersFound': 'No orders found matching the criteria.',
     'orders.promoActive': 'Promo Active',
     'orders.notPriced': 'Unpriced',
+    'orders.deleteOrder': 'Delete Order',
+    'orders.deleteConfirmTitle': 'Delete Order',
+    'orders.deleteConfirmPrompt': 'Are you sure you want to permanently delete order',
+    'orders.deleteWarning': 'This action is irreversible. All configured doors, workshop cutting sheets, and payment records linked to this order will be permanently deleted.',
+    'orders.deleteWarningPaid': 'This order includes recorded payments totaling',
+    'orders.deleteSuccess': 'Order deleted successfully.',
+    'orders.deleteError': 'Error deleting order.',
+    'orders.deleting': 'Deleting...',
+    'orders.confirmDeleteBtn': 'Delete Permanently',
 
     // Clients CRM
     'clients.title': 'Client Directory & Account Tracking',
@@ -1227,6 +1245,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.noOrdersFound': 'لم يتم العثور على أي طلبات مطابقة للمعايير.',
     'orders.promoActive': 'تخفيض نشط',
     'orders.notPriced': 'غير مسعر',
+    'orders.deleteOrder': 'حذف الطلب',
+    'orders.deleteConfirmTitle': 'حذف الطلب',
+    'orders.deleteConfirmPrompt': 'هل أنت متأكد من رغبتك في حذف الطلب نهائياً',
+    'orders.deleteWarning': 'هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع الأبواب المهيأة، فئات القص في الورشة، وسجلات الدفعات المرتبطة بهذا الطلب نهائياً.',
+    'orders.deleteWarningPaid': 'يتضمن هذا الطلب مبالغ مدفوعة ومسددة بقيمة',
+    'orders.deleteSuccess': 'تم حذف الطلب بنجاح.',
+    'orders.deleteError': 'حدث خطأ أثناء حذف الطلب.',
+    'orders.deleting': 'جاري الحذف...',
+    'orders.confirmDeleteBtn': 'حذف نهائياً',
 
     // Clients CRM
     'clients.title': 'سجل الزبائن ومتابعة الحسابات',
