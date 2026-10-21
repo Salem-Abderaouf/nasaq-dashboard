@@ -105,6 +105,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.editInStudio': 'Modifier dans le Studio 2D',
     'orders.viewDetails': 'Ouvrir détails de la commande',
     'orders.recordPayment': 'Encaisser un paiement',
+    'orders.paymentHistory': 'Historique des versements',
+    'orders.viewPaymentHistory': 'Consulter l\'historique des versements',
     'orders.filterStatus': 'Tous les états',
     'orders.filterPayment': 'Tous les règlements',
 
@@ -300,6 +302,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.editInStudio': 'Edit in 2D Studio',
     'orders.viewDetails': 'View Order Details',
     'orders.recordPayment': 'Record Payment',
+    'orders.paymentHistory': 'Payment History',
+    'orders.viewPaymentHistory': 'View Payment History',
     'orders.filterStatus': 'All Statuses',
     'orders.filterPayment': 'All Payments',
 
@@ -495,6 +499,8 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.editInStudio': 'تعديل في ستوديو 2D',
     'orders.viewDetails': 'عرض تفاصيل الطلب',
     'orders.recordPayment': 'تسجيل دفعة نقدية',
+    'orders.paymentHistory': 'سجل المقبوضات والدفعات',
+    'orders.viewPaymentHistory': 'عرض سجل الدفعات والمقبوضات',
     'orders.filterStatus': 'جميع الحالات',
     'orders.filterPayment': 'جميع الدفعات',
 

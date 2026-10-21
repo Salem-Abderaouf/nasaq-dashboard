@@ -11,10 +11,12 @@ import {
   RefreshCw, 
   ShoppingBag,
   Clock,
-  Sliders
+  Sliders,
+  ReceiptText
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { OrderPaymentsHistoryModal } from './OrderPaymentsHistoryModal';
 
 interface OrdersListViewProps {
   onOpenConfigurator: () => void;
@@ -40,6 +42,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const [selectedOrderForPayments, setSelectedOrderForPayments] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -266,7 +269,11 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                       <td className={`py-3.5 px-4 ${isRtl ? 'text-left' : 'text-right'}`}>
                         {canViewFinancials ? (
                           <>
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold ${paymentMeta.bg} ${paymentMeta.text}`}>
+                            <span 
+                              onClick={() => setSelectedOrderForPayments(order)}
+                              className={`inline-block px-2 py-0.5 rounded text-[10.5px] font-bold cursor-pointer hover:opacity-80 transition ${paymentMeta.bg} ${paymentMeta.text}`}
+                              title={t('orders.viewPaymentHistory', 'Cliquer pour voir l\'historique des versements')}
+                            >
                               {paymentMeta.label}
                             </span>
                             <div className="font-mono text-[10px] text-slate-400 mt-0.5">
@@ -306,6 +313,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          {canViewFinancials && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForPayments(order)}
+                              className="p-1.5 text-slate-500 hover:text-nasaq-teal hover:bg-nasaq-teal-subtle rounded-lg transition"
+                              title={t('orders.paymentHistory', 'Historique des versements')}
+                            >
+                              <ReceiptText className="w-4 h-4" />
+                            </button>
+                          )}
                           {canRecordPayments && (
                             <button
                               type="button"
@@ -326,6 +343,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Order Payments History Modal */}
+      {selectedOrderForPayments && (
+        <OrderPaymentsHistoryModal
+          order={selectedOrderForPayments}
+          onClose={() => setSelectedOrderForPayments(null)}
+          onRecordPayment={onRecordPayment}
+          onRefreshOrders={fetchOrders}
+        />
+      )}
     </div>
   );
 };
