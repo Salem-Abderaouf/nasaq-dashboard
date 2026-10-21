@@ -18,6 +18,7 @@ export interface Client {
   address?: string | null;
   notes?: string | null;
   created_at?: string;
+  orders?: { id: string }[];
 }
 
 export type ProspectStatus = 

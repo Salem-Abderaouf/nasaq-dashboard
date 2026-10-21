@@ -108,6 +108,25 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.filterStatus': 'Tous les états',
     'orders.filterPayment': 'Tous les règlements',
 
+    // Clients CRM
+    'clients.title': 'Répertoire Clients & Suivi des Comptes',
+    'clients.subtitle': 'Comptes clients, coordonnées, encaissements et suivi des créances',
+    'clients.newClient': 'Nouveau Client',
+    'clients.refresh': 'Actualiser',
+    'clients.searchPlaceholder': 'Rechercher par nom ou numéro de téléphone...',
+    'clients.noClients': 'Aucun client trouvé. Créez-en un nouveau ou utilisez l\'initialisation démo.',
+    'clients.loading': 'Chargement des clients...',
+    'clients.newOrder': 'Nouvelle Commande',
+    'clients.statement': 'Relevé',
+    'clients.edit': 'Modifier',
+    'clients.delete': 'Supprimer',
+    'clients.deleteConfirmTitle': 'Supprimer le Client',
+    'clients.deleteConfirmDesc': 'Êtes-vous sûr de vouloir supprimer définitivement ce client ? Cette action est irréversible.',
+    'clients.deleteWarningOrders': 'Ce client possède des commandes actives enregistrées. La suppression sera bloquée pour préserver l\'historique comptable.',
+    'clients.confirmDelete': 'Supprimer définitivement',
+    'clients.cancel': 'Annuler',
+    'clients.ordersCount': 'cde(s)',
+
     // Order Details Modal
     'orderModal.createdOn': 'Créée le',
     'orderModal.changeStatus': 'Changer le Statut',
@@ -284,6 +303,25 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.filterStatus': 'All Statuses',
     'orders.filterPayment': 'All Payments',
 
+    // Clients CRM
+    'clients.title': 'Client Directory & Account Tracking',
+    'clients.subtitle': 'Client accounts, contact info, payments and balance tracking',
+    'clients.newClient': 'New Client',
+    'clients.refresh': 'Refresh',
+    'clients.searchPlaceholder': 'Search by name or phone number...',
+    'clients.noClients': 'No clients found. Create a new one or seed demo data.',
+    'clients.loading': 'Loading clients...',
+    'clients.newOrder': 'New Order',
+    'clients.statement': 'Statement',
+    'clients.edit': 'Edit',
+    'clients.delete': 'Delete',
+    'clients.deleteConfirmTitle': 'Delete Client',
+    'clients.deleteConfirmDesc': 'Are you sure you want to permanently delete this client? This action cannot be undone.',
+    'clients.deleteWarningOrders': 'This client has active registered orders. Deletion will be blocked to preserve financial records.',
+    'clients.confirmDelete': 'Delete Permanently',
+    'clients.cancel': 'Cancel',
+    'clients.ordersCount': 'order(s)',
+
     // Order Details Modal
     'orderModal.createdOn': 'Created on',
     'orderModal.changeStatus': 'Update Status',
@@ -459,6 +497,25 @@ export const translations: Record<Language, Record<string, string>> = {
     'orders.recordPayment': 'تسجيل دفعة نقدية',
     'orders.filterStatus': 'جميع الحالات',
     'orders.filterPayment': 'جميع الدفعات',
+
+    // Clients CRM
+    'clients.title': 'سجل الزبائن ومتابعة الحسابات',
+    'clients.subtitle': 'حسابات الزبائن، بيانات الاتصال، المدفوعات وتتبع المستحقات',
+    'clients.newClient': 'زبون جديد',
+    'clients.refresh': 'تحديث',
+    'clients.searchPlaceholder': 'البحث بالاسم أو رقم الهاتف...',
+    'clients.noClients': 'لم يتم العثور على زبائن. أنشئ زبوناً جديداً أو استخدم البيانات التجريبية.',
+    'clients.loading': 'جاري تحميل الزبائن...',
+    'clients.newOrder': 'طلب جديد',
+    'clients.statement': 'كشف الحساب',
+    'clients.edit': 'تعديل',
+    'clients.delete': 'حذف',
+    'clients.deleteConfirmTitle': 'حذف الزبون',
+    'clients.deleteConfirmDesc': 'هل أنت متأكد من رغبتك في حذف هذا الزبون نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.',
+    'clients.deleteWarningOrders': 'هذا الزبون لديه طلبات نشطة مسجلة. سيتم رفض الحذف للحفاظ على السجل المحاسبي.',
+    'clients.confirmDelete': 'تأكيد الحذف',
+    'clients.cancel': 'إلغاء',
+    'clients.ordersCount': 'طلبات',
 
     // Order Details Modal
     'orderModal.createdOn': 'أُنشئت بتاريخ',

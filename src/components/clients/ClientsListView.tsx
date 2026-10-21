@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import { Client } from '../../types/database';
 import { formatMoney, formatDate } from '../../utils/formatters';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   Users, 
   Search, 
@@ -12,7 +13,14 @@ import {
   ReceiptText, 
   X,
   CreditCard,
-  Pencil
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Check,
+  ShoppingBag
 } from 'lucide-react';
 
 interface ClientsListViewProps {
@@ -22,6 +30,7 @@ interface ClientsListViewProps {
 export const ClientsListView: React.FC<ClientsListViewProps> = ({
   onStartOrderForClient
 }) => {
+  const { t } = useLanguage();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -45,18 +54,36 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
   const [editNotes, setEditNotes] = useState('');
   const [updating, setUpdating] = useState(false);
 
+  // Delete client state
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Toast feedback state
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [copiedClientId, setCopiedClientId] = useState<string | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
   const fetchClients = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('clients').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('clients')
+        .select('*, orders (id)')
+        .order('created_at', { ascending: false });
+
       if (search) {
         query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
       }
       const { data, error } = await query;
       if (error) throw error;
       setClients(data || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching clients:', err);
+      showToast(err.message || 'Erreur lors du chargement des clients.', 'error');
     } finally {
       setLoading(false);
     }
@@ -65,6 +92,23 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
   useEffect(() => {
     fetchClients();
   }, [search]);
+
+  // Copy phone number to clipboard
+  const handleCopyPhone = (client: Client, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!client.phone) return;
+    navigator.clipboard.writeText(client.phone);
+    setCopiedClientId(client.id);
+    setTimeout(() => setCopiedClientId(null), 2000);
+  };
+
+  // Helper to extract clean initials for avatar badge
+  const getInitials = (name: string) => {
+    if (!name) return 'CL';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
 
   // Load client stats ledger
   const openClientStats = async (client: Client) => {
@@ -116,8 +160,9 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
         orders: ordersList,
         recentPayments
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching client stats:', err);
+      showToast('Impossible de charger le relevé client.', 'error');
     } finally {
       setLoadingStats(false);
     }
@@ -126,7 +171,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newPhone.trim()) {
-      alert('Veuillez renseigner le nom et le téléphone.');
+      showToast('Veuillez renseigner le nom et le numéro de téléphone.', 'error');
       return;
     }
 
@@ -140,7 +185,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
           address: newAddress.trim() || null,
           notes: newNotes.trim() || null
         })
-        .select()
+        .select('*, orders (id)')
         .single();
 
       if (error) throw error;
@@ -150,9 +195,10 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
       setNewPhone('');
       setNewAddress('');
       setNewNotes('');
+      showToast(`Client "${data.name}" créé avec succès !`, 'success');
     } catch (err: any) {
       console.error('Error creating client:', err);
-      alert(err.message || 'Erreur lors de la création du client.');
+      showToast(err.message || 'Erreur lors de la création du client.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +216,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
     e.preventDefault();
     if (!clientToEdit) return;
     if (!editName.trim() || !editPhone.trim()) {
-      alert('Veuillez renseigner le nom et le téléphone.');
+      showToast('Veuillez renseigner le nom et le numéro de téléphone.', 'error');
       return;
     }
 
@@ -185,7 +231,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
           notes: editNotes.trim() || null
         })
         .eq('id', clientToEdit.id)
-        .select()
+        .select('*, orders (id)')
         .single();
 
       if (error) throw error;
@@ -195,24 +241,100 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
         setSelectedClientForStats(data);
       }
       setClientToEdit(null);
+      showToast(`Fiche de "${data.name}" mise à jour avec succès.`, 'success');
     } catch (err: any) {
       console.error('Error updating client:', err);
-      alert(err.message || 'Erreur lors de la mise à jour du client.');
+      showToast(err.message || 'Erreur lors de la mise à jour du client.', 'error');
     } finally {
       setUpdating(false);
     }
   };
 
+  // Delete client handler
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
+
+    setDeleting(true);
+    try {
+      // 1. Verify if client has existing orders in database
+      const { count, error: countErr } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', clientToDelete.id);
+
+      if (countErr) throw countErr;
+
+      if (count && count > 0) {
+        showToast(
+          `Suppression impossible : "${clientToDelete.name}" est associé à ${count} commande(s) active(s). Veuillez d'abord supprimer ou réaffecter ses commandes.`,
+          'error'
+        );
+        setClientToDelete(null);
+        return;
+      }
+
+      // 2. Perform deletion
+      const { error: delErr } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientToDelete.id);
+
+      if (delErr) throw delErr;
+
+      setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
+      if (selectedClientForStats?.id === clientToDelete.id) {
+        setSelectedClientForStats(null);
+      }
+      showToast(`Client "${clientToDelete.name}" supprimé avec succès.`, 'success');
+      setClientToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting client:', err);
+      showToast(err.message || 'Erreur lors de la suppression du client.', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-xs font-bold border backdrop-blur-md ${
+            toastMessage.type === 'success'
+              ? 'bg-emerald-900/95 text-emerald-100 border-emerald-700'
+              : 'bg-rose-900/95 text-rose-100 border-rose-700'
+          }`}>
+            {toastMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            )}
+            <span>{toastMessage.text}</span>
+            <button 
+              type="button" 
+              onClick={() => setToastMessage(null)}
+              className="ml-2 text-white/60 hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
-            Répertoire Clients & Suivi des Comptes
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Comptes clients, coordonnées, encaissements et suivi des créances
+          <div className="flex items-center gap-3">
+            <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
+              {t('clients.title', 'Répertoire Clients & Suivi des Comptes')}
+            </h1>
+            <span className="px-2.5 py-0.5 bg-nasaq-teal/10 text-nasaq-teal border border-nasaq-teal/20 text-xs font-bold rounded-full font-mono">
+              {clients.length} {t('clients.ordersCount', 'clients')}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            {t('clients.subtitle', 'Comptes clients, coordonnées, encaissements et suivi des créances')}
           </p>
         </div>
 
@@ -221,117 +343,297 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
             type="button"
             onClick={fetchClients}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-300 hover:border-slate-400 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+            title="Rafraîchir la liste"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+            <span>{t('clients.refresh', 'Actualiser')}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
+            className="flex items-center gap-1.5 px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl text-xs font-bold transition shadow-xs"
           >
-            <Plus className="w-4 h-4" />
-            <span>Nouveau Client</span>
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>{t('clients.newClient', 'Nouveau Client')}</span>
           </button>
         </div>
       </div>
 
-      {/* Search Input */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
-        <div className="relative max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+      {/* Search Bar */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 min-w-[260px] max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
           <input 
             type="text"
-            placeholder="Rechercher par nom ou numéro de téléphone..."
+            placeholder={t('clients.searchPlaceholder', 'Rechercher par nom ou numéro de téléphone...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal transition"
+            className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal transition"
           />
+          {search && (
+            <button 
+              type="button" 
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="text-xs text-slate-500 font-medium">
+          Affichage : <strong className="text-slate-800">{clients.length}</strong> client(s)
         </div>
       </div>
 
       {/* Clients Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
         {loading ? (
-          <div className="col-span-full py-12 text-center text-slate-400">
-            Chargement des clients...
+          <div className="col-span-full py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-nasaq-teal" />
+            <p className="text-xs font-semibold">{t('clients.loading', 'Chargement des clients...')}</p>
           </div>
         ) : clients.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200">
-            Aucun client trouvé. Créez-en un nouveau ou utilisez l'initialisation démo.
+          <div className="col-span-full py-16 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200 p-6">
+            <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+            <p className="text-xs font-semibold text-slate-600">
+              {t('clients.noClients', 'Aucun client trouvé. Créez-en un nouveau ou utilisez l\'initialisation démo.')}
+            </p>
           </div>
         ) : (
-          clients.map(client => (
-            <div 
-              key={client.id}
-              className="bg-white border border-slate-200 hover:border-nasaq-teal-light rounded-2xl p-4 shadow-2xs hover:shadow-xs transition flex flex-col justify-between space-y-3"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-slate-900 text-sm">{client.name}</h3>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {formatDate(client.created_at)}
-                  </span>
-                </div>
+          clients.map(client => {
+            const ordersCount = client.orders ? client.orders.length : 0;
+            const initials = getInitials(client.name);
+            const isCopied = copiedClientId === client.id;
 
-                <div className="mt-2 space-y-1 text-xs text-slate-600">
-                  <div className="flex items-center gap-1.5 font-mono text-slate-700">
-                    <Phone className="w-3.5 h-3.5 text-nasaq-teal shrink-0" />
-                    <span>{client.phone}</span>
-                  </div>
-                  {client.address && (
-                    <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{client.address}</span>
+            return (
+              <div 
+                key={client.id}
+                className="bg-white border border-slate-200/90 hover:border-nasaq-teal/40 rounded-2xl p-4 md:p-5 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-4 group"
+              >
+                {/* Card Top: Avatar, Name, Creation Date, Orders Count Badge */}
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Avatar initials badge */}
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-nasaq-teal/15 to-nasaq-teal/5 border border-nasaq-teal/20 text-nasaq-teal font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 
+                          onClick={() => openClientStats(client)}
+                          className="font-bold text-slate-900 text-sm leading-tight truncate group-hover:text-nasaq-teal transition cursor-pointer"
+                          title={client.name}
+                        >
+                          {client.name}
+                        </h3>
+                        <span className="text-[10.5px] text-slate-400 font-mono block mt-0.5">
+                          Inscrit le {formatDate(client.created_at)}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  {client.notes && (
-                    <p className="text-[11px] text-slate-500 italic line-clamp-2 mt-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                      "{client.notes}"
-                    </p>
-                  )}
-                </div>
-              </div>
 
-              {/* Actions */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
+                    {/* Orders count badge */}
+                    <div className="shrink-0">
+                      {ordersCount > 0 ? (
+                        <span 
+                          onClick={() => openClientStats(client)}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+                          title={`${ordersCount} commande(s) liée(s) à ce client`}
+                        >
+                          <ShoppingBag className="w-3 h-3" />
+                          <span>{ordersCount} {t('clients.ordersCount', 'cde(s)')}</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium font-mono bg-slate-100 text-slate-400">
+                          0 {t('clients.ordersCount', 'cde')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contact Info Pill */}
+                  <div className="space-y-1.5 pt-1">
+                    {/* Phone */}
+                    <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-mono text-slate-700">
+                      <a 
+                        href={`tel:${client.phone}`}
+                        className="flex items-center gap-1.5 hover:text-nasaq-teal font-bold transition truncate"
+                        title="Appeler le client"
+                      >
+                        <Phone className="w-3.5 h-3.5 text-nasaq-teal shrink-0" />
+                        <span>{client.phone}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopyPhone(client, e)}
+                        className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-white transition shrink-0"
+                        title="Copier le numéro"
+                      >
+                        {isCopied ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Address */}
+                    {client.address && (
+                      <div className="flex items-start gap-1.5 text-slate-600 text-[11.5px] px-1">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="truncate" title={client.address}>{client.address}</span>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {client.notes && (
+                      <p className="text-[11px] text-slate-500 italic line-clamp-2 bg-amber-50/60 p-2 rounded-xl border border-amber-100/70 mt-1">
+                        "{client.notes}"
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4 Card Actions Toolbar */}
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  {/* Action 1 (Primary): Nouvelle Commande */}
                   <button
                     type="button"
-                    onClick={() => openEditModal(client)}
-                    className="flex items-center gap-1 text-[11px] font-bold text-slate-700 hover:text-nasaq-teal hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition"
-                    title="Modifier les coordonnées du client"
+                    onClick={() => onStartOrderForClient(client)}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow transition-all"
+                    title="Démarrer un nouveau projet / devis pour ce client dans le Studio 2D"
                   >
-                    <Pencil className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Modifier</span>
+                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{t('clients.newOrder', 'Nouvelle Commande')}</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openClientStats(client)}
-                    className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-nasaq-teal hover:bg-slate-100 px-2 py-1 rounded-lg transition"
-                    title="Relevé financier & créances"
-                  >
-                    <ReceiptText className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Relevé</span>
-                  </button>
+                  {/* Actions 2, 3, 4: Relevé, Modifier, Supprimer */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {/* Action 2: Relevé Financier */}
+                    <button
+                      type="button"
+                      onClick={() => openClientStats(client)}
+                      className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-nasaq-teal bg-slate-50 hover:bg-slate-100 border border-slate-200 py-1.5 px-1.5 rounded-lg transition"
+                      title="Afficher le relevé financier, versements et créances"
+                    >
+                      <ReceiptText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="truncate">{t('clients.statement', 'Relevé')}</span>
+                    </button>
+
+                    {/* Action 3: Modifier */}
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(client)}
+                      className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-amber-700 bg-slate-50 hover:bg-amber-50/80 border border-slate-200 hover:border-amber-200 py-1.5 px-1.5 rounded-lg transition"
+                      title="Modifier les coordonnées du client"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span className="truncate">{t('clients.edit', 'Modifier')}</span>
+                    </button>
+
+                    {/* Action 4: Supprimer */}
+                    <button
+                      type="button"
+                      onClick={() => setClientToDelete(client)}
+                      className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 py-1.5 px-1.5 rounded-lg transition"
+                      title="Supprimer ce client"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600 shrink-0" />
+                      <span className="truncate">{t('clients.delete', 'Supprimer')}</span>
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => onStartOrderForClient(client)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-nasaq-teal bg-nasaq-teal-subtle hover:bg-nasaq-teal/20 px-2.5 py-1 rounded-lg transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Nouvelle Commande</span>
-                </button>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {clientToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="bg-rose-50 border-b border-rose-100 p-5 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-slate-900 text-sm">
+                  {t('clients.deleteConfirmTitle', 'Supprimer le Client')}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Êtes-vous sûr de vouloir supprimer définitivement la fiche de <strong className="text-slate-800 font-bold">"{clientToDelete.name}"</strong> ?
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setClientToDelete(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3.5 text-xs text-slate-600">
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-start gap-2.5 text-amber-800">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[11.5px] leading-relaxed">
+                  {t('clients.deleteWarningOrders', 'Ce client ne pourra être supprimé que s\'il ne possède aucune commande enregistrée dans l\'historique comptable.')}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Nom :</span>
+                  <span className="font-bold text-slate-800">{clientToDelete.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Téléphone :</span>
+                  <span className="text-slate-800">{clientToDelete.phone}</span>
+                </div>
+                {clientToDelete.orders && (
+                  <div className="flex justify-between pt-1 border-t border-slate-200">
+                    <span className="text-slate-500">Commandes liées :</span>
+                    <span className="font-bold text-slate-800">{clientToDelete.orders.length}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setClientToDelete(null)}
+                disabled={deleting}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-100 transition text-xs"
+              >
+                {t('clients.cancel', 'Annuler')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteClient}
+                disabled={deleting}
+                className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white rounded-xl font-bold transition text-xs shadow-xs disabled:opacity-50"
+              >
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Suppression...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{t('clients.confirmDelete', 'Supprimer définitivement')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Client Modal */}
       {isAddModalOpen && (
@@ -340,7 +642,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
             <div className="bg-nasaq-teal text-white p-4 px-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Ajouter un Nouveau Client</h3>
+                <h3 className="font-bold text-sm">{t('clients.newClient', 'Ajouter un Nouveau Client')}</h3>
               </div>
               <button 
                 type="button" 
@@ -360,19 +662,19 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="ex: M. Ahmed Benali"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none"
                 />
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
                 <input 
-                  type="text"
+                  type="tel"
                   required
                   placeholder="ex: 0550 12 34 56"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono focus:border-nasaq-teal focus:outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-mono focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none"
                 />
               </div>
 
@@ -383,7 +685,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="ex: Résidence Les Pins, Oran"
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none"
                 />
               </div>
 
@@ -394,7 +696,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="Notes commerciales, type de projet..."
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none resize-none"
                 />
               </div>
 
@@ -403,16 +705,16 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   disabled={submitting}
-                  className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition"
                 >
-                  Annuler
+                  {t('clients.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
+                  className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl font-bold transition disabled:opacity-50"
                 >
-                  {submitting ? 'Création...' : 'Créer le Client'}
+                  {submitting ? 'Création...' : t('clients.newClient', 'Créer le Client')}
                 </button>
               </div>
             </form>
@@ -447,7 +749,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="Nom complet du client"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none font-medium"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none font-medium"
                 />
               </div>
 
@@ -459,7 +761,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="0660 00 00 00"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none font-mono"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none font-mono"
                 />
               </div>
 
@@ -470,7 +772,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="Adresse ou localisation du chantier"
                   value={editAddress}
                   onChange={(e) => setEditAddress(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none"
                 />
               </div>
 
@@ -481,7 +783,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   placeholder="Notes particulières, préférences..."
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none resize-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal focus:outline-none resize-none"
                 />
               </div>
 
@@ -489,14 +791,14 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setClientToEdit(null)}
-                  className="px-3.5 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold transition"
+                  className="px-3.5 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold transition"
                 >
-                  Annuler
+                  {t('clients.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50 flex items-center gap-1.5"
+                  className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl font-bold transition disabled:opacity-50 flex items-center gap-1.5"
                 >
                   {updating ? 'Enregistrement...' : 'Enregistrer les Modifications'}
                 </button>
@@ -523,7 +825,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   title="Modifier les coordonnées de ce client"
                 >
                   <Pencil className="w-3 h-3 text-nasaq-gold" />
-                  <span>Modifier</span>
+                  <span>{t('clients.edit', 'Modifier')}</span>
                 </button>
                 <button 
                   type="button" 
@@ -603,7 +905,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedClientForStats(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold"
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold"
               >
                 Fermer
               </button>
