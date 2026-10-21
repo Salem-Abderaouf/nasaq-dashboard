@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import { Worker, SalaryAdvance, SalaryBonus, SalaryDeduction } from '../../types/database';
 import { formatMoney, formatDate } from '../../utils/formatters';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   BadgeDollarSign, 
   Users, 
@@ -24,6 +25,7 @@ import { AuthService } from '../../services/authService';
 import { PERMISSION_PRESETS } from '../../types/auth';
 
 export const WorkersPayrollView: React.FC = () => {
+  const { t } = useLanguage();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddWorkerModalOpen, setIsAddWorkerModalOpen] = useState(false);
@@ -180,7 +182,7 @@ export const WorkersPayrollView: React.FC = () => {
       setAdjReason('');
     } catch (err: any) {
       console.error('Error saving adjustment:', err);
-      alert(err.message || 'Erreur lors de l\'enregistrement.');
+      alert(err.message || t('common.error', 'Erreur lors de l\'enregistrement.'));
     } finally {
       setSubmittingAdj(false);
     }
@@ -189,7 +191,7 @@ export const WorkersPayrollView: React.FC = () => {
   const handleCreateWorker = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || baseSalary <= 0) {
-      alert('Veuillez remplir les champs obligatoires.');
+      alert(t('common.required', 'Veuillez remplir les champs obligatoires.'));
       return;
     }
 
@@ -249,7 +251,7 @@ export const WorkersPayrollView: React.FC = () => {
       setNewPassword('worker123');
     } catch (err: any) {
       console.error('Error creating worker:', err);
-      alert(err.message || 'Erreur lors de la création de l\'employé.');
+      alert(err.message || t('common.error', 'Erreur lors de la création de l\'employé.'));
     } finally {
       setSubmittingWorker(false);
     }
@@ -261,10 +263,10 @@ export const WorkersPayrollView: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
-            Ressources Humaines & Moteur de Paie
+            {t('workers.title', 'Ressources Humaines & Moteur de Paie')}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Salaires de base, gestion des avances sur salaire, primes et retenues
+            {t('workers.subtitle', 'Salaires de base, gestion des avances sur salaire, primes et retenues')}
           </p>
         </div>
 
@@ -276,7 +278,7 @@ export const WorkersPayrollView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <span>{t('common.refresh', 'Actualiser')}</span>
           </button>
 
           <button
@@ -285,7 +287,7 @@ export const WorkersPayrollView: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouvel Employé</span>
+            <span>{t('workers.newWorker', 'Nouvel Employé')}</span>
           </button>
         </div>
       </div>
@@ -297,16 +299,16 @@ export const WorkersPayrollView: React.FC = () => {
         <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <span className="font-bold text-slate-700 text-xs uppercase tracking-wider">
-              Artisans & Employés ({workers.length})
+              {t('workers.listTitle', 'Artisans & Employés')} ({workers.length})
             </span>
           </div>
 
           <div className="space-y-2 max-h-[68vh] overflow-y-auto pr-1">
             {loading ? (
-              <div className="py-8 text-center text-slate-400 text-xs">Chargement des employés...</div>
+              <div className="py-8 text-center text-slate-400 text-xs">{t('workers.loading', 'Chargement des employés...')}</div>
             ) : workers.length === 0 ? (
               <div className="py-6 text-center text-slate-400 italic text-xs">
-                Aucun employé enregistré.
+                {t('workers.empty', 'Aucun employé enregistré.')}
               </div>
             ) : (
               workers.map(w => {
@@ -334,15 +336,15 @@ export const WorkersPayrollView: React.FC = () => {
                         {hasAppAccess ? (
                           <span className="text-[9.5px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
                             <Key className="w-2.5 h-2.5 text-emerald-600" />
-                            Accès
+                            {t('workers.accessActive', 'Accès')}
                           </span>
                         ) : (
                           <span className="text-[9.5px] bg-slate-100 text-slate-400 px-1 py-0.2 rounded">
-                            Sans accès
+                            {t('workers.accessNone', 'Sans accès')}
                           </span>
                         )}
                         <span className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.2 rounded font-mono">
-                          J:{w.payment_day}
+                          {t('workers.payDayShort', 'J:{day}').replace('{day}', String(w.payment_day))}
                         </span>
                       </div>
                     </div>
@@ -363,7 +365,7 @@ export const WorkersPayrollView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <h2 className="font-bold text-slate-900 text-base">{selectedWorker.name}</h2>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
-                      Actif
+                      {t('workers.statusActive', 'Actif')}
                     </span>
                   </div>
                   <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
@@ -373,10 +375,10 @@ export const WorkersPayrollView: React.FC = () => {
                     </span>
                     <span className="flex items-center gap-1 font-mono">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      Embauche: {formatDate(selectedWorker.employment_date)}
+                      {t('workers.hiredDate', 'Embauche:')} {formatDate(selectedWorker.employment_date)}
                     </span>
                     <span className="font-mono text-slate-600">
-                      Tél: {selectedWorker.phone}
+                      {t('clients.phone', 'Tél:')} {selectedWorker.phone}
                     </span>
                   </div>
                 </div>
@@ -389,7 +391,7 @@ export const WorkersPayrollView: React.FC = () => {
                     className="flex items-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition"
                   >
                     <DollarSign className="w-3.5 h-3.5" />
-                    + Avance
+                    {t('workers.addAdvance', '+ Avance')}
                   </button>
                   <button
                     type="button"
@@ -397,7 +399,7 @@ export const WorkersPayrollView: React.FC = () => {
                     className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition"
                   >
                     <TrendingUp className="w-3.5 h-3.5" />
-                    + Prime
+                    {t('workers.addBonus', '+ Prime')}
                   </button>
                   <button
                     type="button"
@@ -405,7 +407,7 @@ export const WorkersPayrollView: React.FC = () => {
                     className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-bold transition"
                   >
                     <TrendingDown className="w-3.5 h-3.5" />
-                    - Retenue
+                    {t('workers.addDeduction', '- Retenue')}
                   </button>
                 </div>
               </div>
@@ -429,22 +431,24 @@ export const WorkersPayrollView: React.FC = () => {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs">Accès Application & Droits Ouvrier</span>
+                          <span className="font-bold text-slate-900 text-xs">
+                            {t('workers.appAccessTitle', 'Accès Application & Droits Ouvrier')}
+                          </span>
                           {isEnabled ? (
                             <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              Actif ({loginEmail})
+                              {t('workers.appAccessActive', 'Actif')} ({loginEmail})
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-slate-200 text-slate-600">
-                              Accès Désactivé
+                              {t('workers.appAccessDisabled', 'Accès Désactivé')}
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           {isEnabled 
-                            ? `Droits d'accès accordés par l'admin : ${activePermCount} / 11 permissions actives`
-                            : "L'employé ne peut pas se connecter. Activez son compte et attribuez-lui des droits."
+                            ? t('workers.appAccessDescActive', 'Droits d\'accès accordés par l\'admin : {count} / 11 permissions actives').replace('{count}', String(activePermCount))
+                            : t('workers.appAccessDescDisabled', 'L\'employé ne peut pas se connecter. Activez son compte et attribuez-lui des droits.')
                           }
                         </p>
                       </div>
@@ -456,7 +460,7 @@ export const WorkersPayrollView: React.FC = () => {
                       className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-nasaq-teal border border-nasaq-teal/40 rounded-xl text-xs font-bold transition shadow-2xs"
                     >
                       <Key className="w-3.5 h-3.5" />
-                      <span>Gérer les Identifiants & Droits</span>
+                      <span>{t('workers.manageCreds', 'Gérer les Identifiants & Droits')}</span>
                     </button>
                   </div>
                 );
@@ -465,31 +469,31 @@ export const WorkersPayrollView: React.FC = () => {
               {/* Monthly Net Salary Summary Box */}
               <div className="bg-gradient-to-r from-nasaq-teal to-nasaq-teal-dark text-white rounded-2xl p-5 shadow-sm">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-nasaq-gold-light">
-                  Calcul du Salaire Net à Verser (Cycle en cours)
+                  {t('workers.payrollSummaryTitle', 'Calcul du Salaire Net à Verser (Cycle en cours)')}
                 </span>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-white/10 text-xs">
                   <div>
-                    <span className="text-white/70 block">Salaire de Base</span>
+                    <span className="text-white/70 block">{t('workers.baseSalary', 'Salaire de Base')}</span>
                     <span className="font-mono font-bold text-sm text-white">{formatMoney(currentBase)}</span>
                   </div>
                   <div>
-                    <span className="text-white/70 block">+ Primes</span>
+                    <span className="text-white/70 block">+ {t('workers.bonuses', 'Primes')}</span>
                     <span className="font-mono font-bold text-sm text-emerald-300">+{formatMoney(totalBonuses)}</span>
                   </div>
                   <div>
-                    <span className="text-white/70 block">- Retenues</span>
+                    <span className="text-white/70 block">- {t('workers.deductions', 'Retenues')}</span>
                     <span className="font-mono font-bold text-sm text-rose-300">-{formatMoney(totalDeductions)}</span>
                   </div>
                   <div>
-                    <span className="text-white/70 block">- Avances Non Soldées</span>
+                    <span className="text-white/70 block">{t('workers.unsettledAdvances', '- Avances Non Soldées')}</span>
                     <span className="font-mono font-bold text-sm text-amber-300">-{formatMoney(totalUnsettledAdvances)}</span>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
                   <span className="font-cinzel text-sm font-bold text-white tracking-wide">
-                    Net Estimé Après Déductions :
+                    {t('workers.netEstimated', 'Net Estimé Après Déductions :')}
                   </span>
                   <span className="font-mono text-2xl font-extrabold text-nasaq-gold">
                     {formatMoney(netSalary)}
@@ -502,12 +506,12 @@ export const WorkersPayrollView: React.FC = () => {
                 {/* Advances */}
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
                   <span className="font-bold text-slate-800 text-[11px] uppercase flex items-center justify-between">
-                    <span>Avances ({advances.length})</span>
-                    <span className="text-[10px] font-mono text-amber-700">Total: {formatMoney(totalUnsettledAdvances)}</span>
+                    <span>{t('workers.advancesTitle', 'Avances')} ({advances.length})</span>
+                    <span className="text-[10px] font-mono text-amber-700">{t('workers.totalLabel', 'Total:')} {formatMoney(totalUnsettledAdvances)}</span>
                   </span>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {advances.length === 0 ? (
-                      <p className="text-slate-400 italic text-center py-2">Aucune avance</p>
+                      <p className="text-slate-400 italic text-center py-2">{t('workers.noAdvances', 'Aucune avance')}</p>
                     ) : (
                       advances.map(a => (
                         <div key={a.id} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-[11px]">
@@ -516,7 +520,7 @@ export const WorkersPayrollView: React.FC = () => {
                             <span className="text-[10px] text-slate-400">{formatDate(a.date)}</span>
                           </div>
                           <span className={`text-[9.5px] px-1.5 py-0.5 rounded font-bold ${a.is_settled ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {a.is_settled ? 'Soldée' : 'En cours'}
+                            {a.is_settled ? t('workers.settled', 'Soldée') : t('workers.pending', 'En cours')}
                           </span>
                         </div>
                       ))
@@ -527,12 +531,12 @@ export const WorkersPayrollView: React.FC = () => {
                 {/* Bonuses */}
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
                   <span className="font-bold text-slate-800 text-[11px] uppercase flex items-center justify-between">
-                    <span>Primes ({bonuses.length})</span>
-                    <span className="text-[10px] font-mono text-emerald-700">Total: +{formatMoney(totalBonuses)}</span>
+                    <span>{t('workers.bonusesTitle', 'Primes')} ({bonuses.length})</span>
+                    <span className="text-[10px] font-mono text-emerald-700">{t('workers.totalLabel', 'Total:')} +{formatMoney(totalBonuses)}</span>
                   </span>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {bonuses.length === 0 ? (
-                      <p className="text-slate-400 italic text-center py-2">Aucune prime</p>
+                      <p className="text-slate-400 italic text-center py-2">{t('workers.noBonuses', 'Aucune prime')}</p>
                     ) : (
                       bonuses.map(b => (
                         <div key={b.id} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-[11px]">
@@ -550,12 +554,12 @@ export const WorkersPayrollView: React.FC = () => {
                 {/* Deductions */}
                 <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
                   <span className="font-bold text-slate-800 text-[11px] uppercase flex items-center justify-between">
-                    <span>Retenues ({deductions.length})</span>
-                    <span className="text-[10px] font-mono text-rose-700">Total: -{formatMoney(totalDeductions)}</span>
+                    <span>{t('workers.deductionsTitle', 'Retenues')} ({deductions.length})</span>
+                    <span className="text-[10px] font-mono text-rose-700">{t('workers.totalLabel', 'Total:')} -{formatMoney(totalDeductions)}</span>
                   </span>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {deductions.length === 0 ? (
-                      <p className="text-slate-400 italic text-center py-2">Aucune retenue</p>
+                      <p className="text-slate-400 italic text-center py-2">{t('workers.noDeductions', 'Aucune retenue')}</p>
                     ) : (
                       deductions.map(d => (
                         <div key={d.id} className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center text-[11px]">
@@ -573,7 +577,7 @@ export const WorkersPayrollView: React.FC = () => {
             </>
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-400 italic">
-              Sélectionnez un employé pour afficher le détail de paie.
+              {t('workers.selectWorkerPrompt', 'Sélectionnez un employé pour afficher le détail de paie.')}
             </div>
           )}
         </div>
@@ -585,7 +589,11 @@ export const WorkersPayrollView: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
             <div className="bg-nasaq-teal text-white p-3.5 px-5 flex items-center justify-between">
               <span className="font-bold text-xs capitalize">
-                Ajouter une {adjustmentModalType === 'advance' ? 'Avance sur Salaire' : adjustmentModalType === 'bonus' ? 'Prime Exceptionnelle' : 'Retenue / Pénalité'}
+                {adjustmentModalType === 'advance' 
+                  ? t('workers.modal.advanceTitle', 'Ajouter une Avance sur Salaire') 
+                  : adjustmentModalType === 'bonus' 
+                  ? t('workers.modal.bonusTitle', 'Ajouter une Prime Exceptionnelle') 
+                  : t('workers.modal.deductionTitle', 'Ajouter une Retenue / Pénalité')}
               </span>
               <button type="button" onClick={() => setAdjustmentModalType(null)} className="text-white/70 hover:text-white">
                 <X className="w-4 h-4" />
@@ -594,7 +602,7 @@ export const WorkersPayrollView: React.FC = () => {
 
             <form onSubmit={handleCreateAdjustment} className="p-5 space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Montant (DA) *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.amount', 'Montant (DA) *')}</label>
                 <input 
                   type="number"
                   min={1}
@@ -607,7 +615,7 @@ export const WorkersPayrollView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Date d'Application</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.date', 'Date d\'Application')}</label>
                 <input 
                   type="date"
                   required
@@ -618,10 +626,10 @@ export const WorkersPayrollView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Motif / Justificatif</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.reason', 'Motif / Justificatif')}</label>
                 <input 
                   type="text"
-                  placeholder="ex: Avance fête de l'aïd, prime de rendement..."
+                  placeholder={t('workers.modal.reasonPlaceholder', 'ex: Avance fête de l\'aïd, prime de rendement...')}
                   value={adjReason}
                   onChange={(e) => setAdjReason(e.target.value)}
                   className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
@@ -635,14 +643,14 @@ export const WorkersPayrollView: React.FC = () => {
                   disabled={submittingAdj}
                   className="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-600 font-semibold"
                 >
-                  Annuler
+                  {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={submittingAdj}
                   className="px-4 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white font-bold rounded-lg"
                 >
-                  {submittingAdj ? 'Enregistrement...' : 'Valider'}
+                  {submittingAdj ? t('workers.modal.saving', 'Enregistrement...') : t('workers.modal.validate', 'Valider')}
                 </button>
               </div>
             </form>
@@ -657,7 +665,7 @@ export const WorkersPayrollView: React.FC = () => {
             <div className="bg-nasaq-teal text-white p-4 px-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Ajouter un Collaborateur / Artisan</h3>
+                <h3 className="font-bold text-sm">{t('workers.modal.newTitle', 'Ajouter un Collaborateur / Artisan')}</h3>
               </div>
               <button type="button" onClick={() => setIsAddWorkerModalOpen(false)} className="text-white/70 hover:text-white">
                 <X className="w-5 h-5" />
@@ -666,7 +674,7 @@ export const WorkersPayrollView: React.FC = () => {
 
             <form onSubmit={handleCreateWorker} className="p-5 space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Nom Complet *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.fullName', 'Nom Complet *')}</label>
                 <input 
                   type="text"
                   required
@@ -678,7 +686,7 @@ export const WorkersPayrollView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.phone', 'Téléphone *')}</label>
                 <input 
                   type="text"
                   required
@@ -690,7 +698,7 @@ export const WorkersPayrollView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Poste / Fonction</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.position', 'Poste / Fonction')}</label>
                 <input 
                   type="text"
                   placeholder="ex: Menuisier Poseur, Opérateur CNC..."
@@ -702,7 +710,7 @@ export const WorkersPayrollView: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Salaire de Base (DA) *</label>
+                  <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.baseSalary', 'Salaire de Base (DA) *')}</label>
                   <input 
                     type="number"
                     min={1}
@@ -714,7 +722,7 @@ export const WorkersPayrollView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-600 mb-1">Jour de Paie (1-31)</label>
+                  <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.payDay', 'Jour de Paie (1-31)')}</label>
                   <input 
                     type="number"
                     min={1}
@@ -731,7 +739,7 @@ export const WorkersPayrollView: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                     <Key className="w-3.5 h-3.5 text-nasaq-teal" />
-                    Accès & Connexion Application
+                    {t('workers.modal.loginSection', 'Accès & Connexion Application')}
                   </span>
                   <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-semibold text-slate-600">
                     <input
@@ -740,7 +748,7 @@ export const WorkersPayrollView: React.FC = () => {
                       onChange={(e) => setNewAppAccess(e.target.checked)}
                       className="rounded text-nasaq-teal focus:ring-nasaq-teal"
                     />
-                    <span>Activer la connexion</span>
+                    <span>{t('workers.modal.enableLogin', 'Activer la connexion')}</span>
                   </label>
                 </div>
 
@@ -748,7 +756,7 @@ export const WorkersPayrollView: React.FC = () => {
                   <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Identifiant / Email</label>
+                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">{t('workers.modal.loginEmail', 'Identifiant / Email')}</label>
                         <input
                           type="text"
                           placeholder={name ? `${name.toLowerCase().replace(/\s+/g, '.')}@nasaq.dz` : 'employe@nasaq.dz'}
@@ -758,7 +766,7 @@ export const WorkersPayrollView: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Mot de passe temporaire</label>
+                        <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">{t('workers.modal.tempPassword', 'Mot de passe temporaire')}</label>
                         <input
                           type="text"
                           value={newPassword}
@@ -769,7 +777,7 @@ export const WorkersPayrollView: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">Profil de droits par défaut</label>
+                      <label className="block font-medium text-slate-500 text-[10.5px] mb-0.5">{t('workers.modal.preset', 'Profil de droits par défaut')}</label>
                       <select
                         value={newPresetId}
                         onChange={(e) => setNewPresetId(e.target.value)}
@@ -793,14 +801,14 @@ export const WorkersPayrollView: React.FC = () => {
                   disabled={submittingWorker}
                   className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
-                  Annuler
+                  {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={submittingWorker}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  {submittingWorker ? 'Création...' : 'Créer l\'Employé & Enregistrer Accès'}
+                  {submittingWorker ? t('workers.modal.saving', 'Création...') : t('workers.modal.submitWorker', 'Créer l\'Employé & Enregistrer Accès')}
                 </button>
               </div>
             </form>

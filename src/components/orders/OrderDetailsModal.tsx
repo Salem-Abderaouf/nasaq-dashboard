@@ -77,14 +77,14 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       onRefreshOrder();
     } catch (err) {
       console.error('Error updating status:', err);
-      alert('Erreur lors de la mise à jour du statut.');
+      alert(t('orderModal.updateStatusError', 'Erreur lors de la mise à jour du statut.'));
     } finally {
       setUpdatingStatus(false);
     }
   };
 
   const handleVoidPayment = async (paymentId: string) => {
-    if (!confirm('Voulez-vous annuler (void) cette transaction de paiement ?')) return;
+    if (!confirm(t('orderPayments.confirmVoid', 'Voulez-vous annuler (void) cette transaction de paiement ?'))) return;
     try {
       const { error } = await supabase
         .from('order_payments')
@@ -102,12 +102,12 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       setPayments(data || []);
     } catch (err) {
       console.error('Error voiding payment:', err);
-      alert('Erreur lors de l\'annulation du paiement.');
+      alert(t('orderPayments.voidError', 'Erreur lors de l\'annulation du paiement.'));
     }
   };
 
-  const statusMeta = getOrderStatusMeta(order.status);
-  const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount);
+  const statusMeta = getOrderStatusMeta(order.status, t);
+  const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount, t);
   const remaining = Math.max(0, order.total_amount - order.paid_amount);
 
   return (
@@ -183,7 +183,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
             {/* Financial Summary */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Finances & Paiement</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400">
+                {t('orderModal.financials', 'Finances & Paiement')}
+              </span>
               {canViewFinancials ? (
                 <>
                   <div className="flex justify-between items-center">
@@ -216,20 +218,20 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 className="w-full px-2.5 py-1.5 text-xs font-bold border border-nasaq-teal/40 rounded-lg bg-white text-nasaq-teal-dark focus:outline-none disabled:opacity-60"
                 title={!canChangeOrderStatus ? "Permission de mise à jour des statuts non accordée." : undefined}
               >
-                <option value="draft">1. Brouillon (draft)</option>
-                <option value="confirmed">2. Confirmée (confirmed)</option>
-                <option value="manufacturing">3. En Fabrication (manufacturing)</option>
-                <option value="ready_for_dispatch">4. Prête Expédition (ready_for_dispatch)</option>
-                <option value="in_transit">5. En Livraison (in_transit)</option>
-                <option value="delivered">6. Livrée (delivered)</option>
-                <option value="installation">7. En Pose (installation)</option>
-                <option value="completed">8. Terminée (completed)</option>
-                <option value="cancelled">9. Annulée (cancelled)</option>
+                <option value="draft">1. {t('status.draft', 'Brouillon')}</option>
+                <option value="confirmed">2. {t('status.confirmed', 'Confirmée')}</option>
+                <option value="manufacturing">3. {t('status.manufacturing', 'En Fabrication')}</option>
+                <option value="ready_for_dispatch">4. {t('status.ready_for_dispatch', 'Prête Expédition')}</option>
+                <option value="in_transit">5. {t('status.in_transit', 'En Livraison')}</option>
+                <option value="delivered">6. {t('status.delivered', 'Livrée')}</option>
+                <option value="installation">7. {t('status.installation', 'En Pose')}</option>
+                <option value="completed">8. {t('status.completed', 'Terminée')}</option>
+                <option value="cancelled">9. {t('status.cancelled', 'Annulée')}</option>
               </select>
               <div className="text-[10px] text-slate-500">
                 {canChangeOrderStatus 
-                  ? "L'historique des changements de statut est conservé pour l'audit d'atelier." 
-                  : "Seuls les opérateurs autorisés peuvent faire avancer le statut."}
+                  ? t('orderModal.statusHistoryNote', "L'historique des changements de statut est conservé pour l'audit d'atelier.") 
+                  : t('orderModal.noPermissionStatus', "Seuls les opérateurs autorisés peuvent faire avancer le statut.")}
               </div>
             </div>
           </div>
@@ -237,14 +239,16 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           {/* Order Items Table with 2D Visual Previews */}
           <div className="space-y-3">
             <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-              Articles & Portes Commandées ({items.length})
+              {t('orderModal.orderedItems', 'Articles & Portes Commandées')} ({items.length})
             </h3>
 
             {loading ? (
-              <div className="py-8 text-center text-slate-400">Chargement des portes...</div>
+              <div className="py-8 text-center text-slate-400">
+                {t('orderModal.loadingDoors', 'Chargement des portes...')}
+              </div>
             ) : items.length === 0 ? (
               <div className="py-6 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200">
-                Aucun article associé à cette commande.
+                {t('orderModal.noItems', 'Aucun article associé à cette commande.')}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,7 +326,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-nasaq-teal" />
-                  Historique des Versements ({payments.length})
+                  {t('orderModal.paymentsHistory', 'Historique des Versements')} ({payments.length})
                 </h3>
                 {canRecordPayments && remaining > 0 && (
                   <button
@@ -330,25 +334,25 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     onClick={() => onRecordPayment(order)}
                     className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
                   >
-                    + Encaisser Versement
+                    {t('orderModal.recordNewPayment', '+ Encaisser Versement')}
                   </button>
                 )}
               </div>
 
               {payments.length === 0 ? (
                 <div className="py-4 text-center text-slate-400 text-xs italic bg-slate-50 rounded-xl border border-slate-200">
-                  Aucun versement enregistré pour cette commande.
+                  {t('orderModal.noPayments', 'Aucun versement enregistré pour cette commande.')}
                 </div>
               ) : (
                 <div className="border border-slate-200 rounded-xl overflow-hidden">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-100 text-slate-500 text-[10px] font-bold uppercase">
                       <tr>
-                        <th className="py-2 px-3">Date</th>
-                        <th className="py-2 px-3">Montant</th>
-                        <th className="py-2 px-3">Remarques</th>
-                        <th className="py-2 px-3">Statut</th>
-                        <th className="py-2 px-3 text-right">Action</th>
+                        <th className="py-2 px-3">{t('orderPayments.tableDate', 'Date')}</th>
+                        <th className="py-2 px-3">{t('orderPayments.tableAmount', 'Montant')}</th>
+                        <th className="py-2 px-3">{t('orderPayments.tableNotes', 'Remarques')}</th>
+                        <th className="py-2 px-3">{t('orderPayments.tableStatus', 'Statut')}</th>
+                        <th className="py-2 px-3 text-right">{t('orderPayments.tableAction', 'Action')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -363,9 +367,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             <td className="py-2 px-3 text-slate-600 truncate max-w-xs">{p.notes || '-'}</td>
                             <td className="py-2 px-3">
                               {isVoided ? (
-                                <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">Annulé</span>
+                                <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">
+                                  {t('orderPayments.voided', 'Annulé')}
+                                </span>
                               ) : (
-                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Validé</span>
+                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">
+                                  {t('orderPayments.validated', 'Validé')}
+                                </span>
                               )}
                             </td>
                             <td className="py-2 px-3 text-right">
@@ -374,9 +382,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                                   type="button"
                                   onClick={() => handleVoidPayment(p.id)}
                                   className="text-[10px] text-rose-600 hover:text-rose-800 font-semibold"
-                                  title="Annuler cette transaction (Void - Réservé Admin)"
+                                  title={t('orderModal.voidTooltip', 'Annuler cette transaction (Void - Réservé Admin)')}
                                 >
-                                  Annuler
+                                  {t('orderModal.voidPayment', 'Annuler')}
                                 </button>
                               )}
                             </td>

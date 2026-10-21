@@ -157,16 +157,16 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal"
             >
-              <option value="all">Tous les Statuts (9 étapes)</option>
-              <option value="draft">1. Brouillon (draft)</option>
-              <option value="confirmed">2. Confirmée (confirmed)</option>
-              <option value="manufacturing">3. En Fabrication (manufacturing)</option>
-              <option value="ready_for_dispatch">4. Prête Expédition (ready_for_dispatch)</option>
-              <option value="in_transit">5. En Livraison (in_transit)</option>
-              <option value="delivered">6. Livrée (delivered)</option>
-              <option value="installation">7. En Pose (installation)</option>
-              <option value="completed">8. Terminée (completed)</option>
-              <option value="cancelled">9. Annulée (cancelled)</option>
+              <option value="all">{t('orders.allStatuses', 'Tous les Statuts (9 étapes)')}</option>
+              <option value="draft">1. {getOrderStatusMeta('draft', t).label}</option>
+              <option value="confirmed">2. {getOrderStatusMeta('confirmed', t).label}</option>
+              <option value="manufacturing">3. {getOrderStatusMeta('manufacturing', t).label}</option>
+              <option value="ready_for_dispatch">4. {getOrderStatusMeta('ready_for_dispatch', t).label}</option>
+              <option value="in_transit">5. {getOrderStatusMeta('in_transit', t).label}</option>
+              <option value="delivered">6. {getOrderStatusMeta('delivered', t).label}</option>
+              <option value="installation">7. {getOrderStatusMeta('installation', t).label}</option>
+              <option value="completed">8. {getOrderStatusMeta('completed', t).label}</option>
+              <option value="cancelled">9. {getOrderStatusMeta('cancelled', t).label}</option>
             </select>
           </div>
 
@@ -178,10 +178,10 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
               onChange={(e) => setPaymentFilter(e.target.value)}
               className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal"
             >
-              <option value="all">Tous les Paiements</option>
-              <option value="paid">Payé Intégralement</option>
-              <option value="partial">Acompte Versé (Partiel)</option>
-              <option value="unpaid">Non Payé (En Attente)</option>
+              <option value="all">{t('orders.allPayments', 'Tous les Paiements')}</option>
+              <option value="paid">{t('orders.payment.paid', 'Payé Intégralement')}</option>
+              <option value="partial">{t('orders.payment.partial', 'Acompte Versé (Partiel)')}</option>
+              <option value="unpaid">{t('orders.payment.unpaid', 'Non Payé (En Attente)')}</option>
             </select>
           </div>
         </div>
@@ -206,19 +206,19 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    Chargement des commandes depuis Supabase...
+                    {t('orders.loading', 'Chargement des commandes depuis Supabase...')}
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 italic">
-                    Aucune commande trouvée correspondant aux critères.
+                    {t('orders.noOrdersFound', 'Aucune commande trouvée correspondant aux critères.')}
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map(order => {
-                  const statusMeta = getOrderStatusMeta(order.status);
-                  const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount);
+                  const statusMeta = getOrderStatusMeta(order.status, t);
+                  const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount, t);
                   const remaining = Math.max(0, order.total_amount - order.paid_amount);
 
                   return (
@@ -228,7 +228,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                         {order.order_number}
                         {order.is_promo_enabled && (
                           <span className="block text-[9px] text-amber-700 font-sans font-bold">
-                            Promo Active
+                            {t('orders.promoActive', 'Promo Active')}
                           </span>
                         )}
                       </td>
@@ -287,7 +287,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
                           </>
                         ) : (
                           <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-mono">
-                            Non Chiffré
+                            {t('orders.notPriced', 'Non Chiffré')}
                           </span>
                         )}
                       </td>

@@ -323,7 +323,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         {/* Section 1: Dossier & Client Info */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
           <div className="flex justify-between items-center font-bold text-nasaq-teal uppercase tracking-wider text-[11px]">
-            <span>Informations Dossier & Facture</span>
+            <span>{t('config.folderInfo', 'Informations Dossier & Facture')}</span>
             <span className="text-slate-400">#Client</span>
           </div>
 
@@ -337,11 +337,11 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 <button
                   type="button"
                   onClick={onRefreshClients}
-                  title="Actualiser la liste des clients depuis Supabase"
+                  title={t('common.refresh', 'Actualiser')}
                   className="text-[10px] text-nasaq-teal hover:text-nasaq-teal-dark flex items-center gap-1 font-semibold"
                 >
                   <RefreshCw className="w-2.5 h-2.5" />
-                  <span>Actualiser</span>
+                  <span>{t('common.refresh', 'Actualiser')}</span>
                 </button>
               )}
             </div>
@@ -353,7 +353,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               </div>
               <input 
                 type="text"
-                placeholder="Rechercher nom, téléphone, adresse..."
+                placeholder={t('config.clientAutocomplete', 'Rechercher nom, téléphone, adresse...')}
                 value={searchQuery}
                 onFocus={() => setIsClientDropdownOpen(true)}
                 onChange={(e) => {
@@ -383,7 +383,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       });
                     }}
                     className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
-                    title="Effacer"
+                    title={t('common.cancel', 'Effacer')}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -392,7 +392,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   type="button"
                   onClick={() => setIsClientDropdownOpen(prev => !prev)}
                   className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
-                  title="Afficher les clients"
+                  title={t('config.clientDirectory', 'Afficher les clients')}
                 >
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -419,13 +419,13 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     type="button"
                     onClick={(e) => openClientEditModal(selectedClient, e)}
                     className="p-1 px-1.5 hover:bg-emerald-200/70 rounded text-emerald-800 font-bold text-[10px] flex items-center gap-1 transition border border-emerald-300"
-                    title="Modifier les coordonnées du client"
+                    title={t('clients.editDetails', 'Modifier les coordonnées du client')}
                   >
                     <Pencil className="w-3 h-3 text-emerald-700" />
-                    <span>Modifier</span>
+                    <span>{t('clients.edit', 'Modifier')}</span>
                   </button>
                   <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                    Client DB
+                    {t('config.clientDb', 'Client DB')}
                   </span>
                 </div>
               </div>
@@ -435,10 +435,10 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             {isClientDropdownOpen && (
               <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto divide-y divide-slate-100 animate-fadeIn">
                 <div className="p-2 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex justify-between items-center">
-                  <span>Répertoire Clients ({filteredClients.length})</span>
+                  <span>{t('config.clientDirectory', 'Répertoire Clients')} ({filteredClients.length})</span>
                   {clients.length > 0 && (
                     <span className="text-nasaq-teal font-medium lowercase">
-                      {clients.length} au total
+                      {clients.length} {t('config.totalClients', 'au total')}
                     </span>
                   )}
                 </div>
@@ -446,7 +446,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {filteredClients.length === 0 ? (
                   <div className="p-3 text-center space-y-2">
                     <div className="text-slate-400 text-xs">
-                      Aucun client trouvé pour <span className="font-semibold text-slate-600">"{searchQuery}"</span>
+                      {t('config.noClientFound', 'Aucun client trouvé pour')} <span className="font-semibold text-slate-600">"{searchQuery}"</span>
                     </div>
                     {searchQuery.trim() && (
                       <button
@@ -463,7 +463,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                         className="w-full py-1.5 px-3 bg-nasaq-teal text-white rounded-lg text-xs font-bold hover:bg-nasaq-teal-dark flex items-center justify-center gap-1.5 transition"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
-                        <span>Créer "{searchQuery.trim()}" à l'enregistrement</span>
+                        <span>{t('config.createOnSave', 'Créer "{name}" à l\'enregistrement').replace('{name}', searchQuery.trim())}</span>
                       </button>
                     )}
                   </div>
@@ -519,7 +519,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                               type="button"
                               onClick={(e) => openClientEditModal(c, e)}
                               className="p-1 hover:bg-slate-200/80 rounded text-slate-500 hover:text-slate-800 transition"
-                              title="Modifier la fiche client"
+                              title={t('clients.editTooltip', 'Modifier la fiche client')}
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
@@ -537,7 +537,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                               }}
                               className="text-[10.5px] font-semibold text-nasaq-teal hover:underline px-1 py-0.5"
                             >
-                              Choisir
+                              {t('config.choose', 'Choisir')}
                             </button>
                           </div>
                         </div>
@@ -561,7 +561,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                           className="w-full text-left py-1 px-2 text-[11px] font-semibold text-nasaq-teal hover:underline flex items-center gap-1.5"
                         >
                           <UserPlus className="w-3 h-3" />
-                          <span>Utiliser comme nouveau client : "{searchQuery.trim()}"</span>
+                          <span>{t('config.createOnSave', 'Utiliser comme nouveau client : "{name}"').replace('{name}', searchQuery.trim())}</span>
                         </button>
                       </div>
                     )}
@@ -575,7 +575,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block font-semibold text-slate-500 uppercase tracking-wide text-[10px]">
-                  N° Facture
+                  {t('config.invoiceNumber', 'N° Facture')}
                 </label>
                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${
                   info.editingOrderId 
@@ -589,7 +589,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               <div className="relative">
                 <input 
                   type="text"
-                  value={info.docRef || info.orderNumber || 'Chargement...'}
+                  value={info.docRef || info.orderNumber || t('common.loading', 'Chargement...')}
                   readOnly
                   title="Numéro de commande et facture attribué automatiquement par la base de données Supabase"
                   className="w-full px-2.5 py-1.5 text-xs bg-slate-100 border border-slate-300 rounded-lg text-slate-800 font-mono font-bold cursor-not-allowed select-all"
@@ -604,7 +604,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             </div>
             <div>
               <label className="block font-semibold text-slate-500 mb-1 uppercase tracking-wide text-[10px]">
-                Date
+                {t('common.date', 'Date')}
               </label>
               <input 
                 type="text"
@@ -617,7 +617,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
 
           <div>
             <label className="block font-semibold text-slate-500 mb-1 uppercase tracking-wide text-[10px]">
-              Acompte / Montant Versé (DA)
+              {t('config.deposit', 'Acompte / Montant Versé (DA)')}
             </label>
             <input 
               type="number"
@@ -632,7 +632,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           {/* Toggle Promo */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-center justify-between">
             <label htmlFor="chk-promo" className="flex items-center gap-1.5 text-amber-900 font-bold cursor-pointer text-xs">
-              <span>🎁 Activer l'Offre Promotionnelle</span>
+              <span>🎁 {t('config.enablePromo', "Activer l'Offre Promotionnelle")}</span>
             </label>
             <input 
               id="chk-promo"
@@ -647,9 +647,9 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
             <div>
               <label htmlFor="chk-pose" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
-                <span>🔨 Inclure la Pose / Installation</span>
+                <span>🔨 {t('config.includeInstallation', 'Inclure la Pose / Installation')}</span>
               </label>
-              <span className="text-[10px] text-slate-500">5 000 DA simple • 6 000 DA 2 vantaux</span>
+              <span className="text-[10px] text-slate-500">{t('config.poseFee', '5 000 DA simple • 6 000 DA 2 vantaux')}</span>
             </div>
             <input 
               id="chk-pose"
@@ -664,9 +664,9 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
           <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
             <div>
               <label htmlFor="chk-transport" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
-                <span>🚚 Inclure le Transport / Livraison</span>
+                <span>🚚 {t('config.includeTransport', 'Inclure le Transport / Livraison')}</span>
               </label>
-              <span className="text-[10px] text-slate-500">Forfait fixe : 3 000 DA par commande</span>
+              <span className="text-[10px] text-slate-500">{t('config.transportFee', 'Forfait fixe : 3 000 DA par commande')}</span>
             </div>
             <input 
               id="chk-transport"
@@ -685,13 +685,13 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             onClick={() => setVisualCtrlOpen(!visualCtrlOpen)}
             className="w-full flex items-center justify-between font-bold text-nasaq-teal uppercase tracking-wider text-[11px]"
           >
-            <span>📐 Contrôle Visuel 2D & Grille</span>
+            <span>📐 {t('config.visualControls', 'Contrôle Visuel 2D & Grille')}</span>
             {visualCtrlOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           {visualCtrlOpen && (
             <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-slate-200">
               <div>
-                <label className="block font-semibold text-slate-500 mb-1 text-[10px]">Échelle (px/cm)</label>
+                <label className="block font-semibold text-slate-500 mb-1 text-[10px]">{t('config.scale', 'Échelle (px/cm)')}</label>
                 <input 
                   type="number"
                   step={0.05}
@@ -703,7 +703,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 />
               </div>
               <div>
-                <label className="block font-semibold text-slate-500 mb-1 text-[10px]">Espacement (px)</label>
+                <label className="block font-semibold text-slate-500 mb-1 text-[10px]">{t('config.spacing', 'Espacement (px)')}</label>
                 <input 
                   type="number"
                   min={10}
@@ -721,14 +721,14 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-extrabold text-nasaq-teal uppercase tracking-wider text-[11px]">
-              Liste des Portes ({doors.length})
+              {t('config.doorsList', 'Liste des Portes')} ({doors.length})
             </span>
             <button
               type="button"
               onClick={onAddDoor}
               className="flex items-center gap-1 bg-nasaq-teal text-white px-2.5 py-1 rounded-lg text-xs font-bold hover:bg-nasaq-teal-dark transition shadow-sm"
             >
-              <Plus className="w-3.5 h-3.5" /> Ajouter
+              <Plus className="w-3.5 h-3.5" /> {t('config.addDoorBtn', 'Ajouter')}
             </button>
           </div>
 
@@ -755,7 +755,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       type="button"
                       onClick={() => onDeleteDoor(index)}
                       className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded transition"
-                      title="Supprimer cette porte"
+                      title={t('config.deleteDoorTooltip', 'Supprimer cette porte')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -764,7 +764,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
 
                 {/* Designation */}
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase">Désignation</label>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase">{t('config.designation', 'Désignation')}</label>
                   <input 
                     type="text"
                     value={door.designation}
@@ -776,7 +776,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {/* Dimensions */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Hauteur (cm)</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">{t('config.height', 'Hauteur (cm)')}</label>
                     <input 
                       type="number"
                       value={door.heightCm}
@@ -785,7 +785,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Largeur (cm)</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">{t('config.width', 'Largeur (cm)')}</label>
                     <input 
                       type="number"
                       value={door.widthCm}
@@ -799,7 +799,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 <div className="bg-[#fdfbf7] border border-nasaq-gold/40 rounded-lg p-2.5">
                   <div className="flex items-center justify-between">
                     <label htmlFor={`rev-chk-${index}`} className="font-bold text-nasaq-gold-dark text-[11px] cursor-pointer flex items-center gap-1.5">
-                      <span>🪵 Imposte / Revêtement Supérieur</span>
+                      <span>🪵 {t('config.transom', 'Imposte / Revêtement Supérieur')}</span>
                     </label>
                     <input 
                       id={`rev-chk-${index}`}
@@ -819,7 +819,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   </div>
                   {hasRev && (
                     <div className="mt-2 pt-1 border-t border-nasaq-gold/20 flex items-center justify-between gap-2">
-                      <span className="text-[10px] text-slate-600 font-medium">Hauteur Imposte (cm) :</span>
+                      <span className="text-[10px] text-slate-600 font-medium">{t('config.transomHeight', 'Hauteur Imposte (cm) :')}</span>
                       <input 
                         type="number"
                         min={10}
@@ -835,7 +835,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {/* Colors Grid */}
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">
-                    Couleur Bois WPC ({COLOR_CATALOG.find(c => c.id === door.colorId)?.name})
+                    {t('config.color', 'Couleur Bois WPC')} ({COLOR_CATALOG.find(c => c.id === door.colorId)?.name})
                   </label>
                   <div className="grid grid-cols-4 gap-1.5">
                     {COLOR_CATALOG.map(col => {
@@ -865,7 +865,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {/* Patterns Selector */}
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">
-                    Motif / Gravure CNC ({PATTERN_CATALOG.find(p => p.id === door.patternId)?.name})
+                    {t('config.pattern', 'Motif / Gravure CNC')} ({PATTERN_CATALOG.find(p => p.id === door.patternId)?.name})
                   </label>
                   <select
                     value={door.patternId || 'none'}
@@ -888,7 +888,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
 
                 {/* Hardware Color */}
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Quincaillerie</label>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">{t('config.hardware', 'Quincaillerie')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -900,7 +900,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       }`}
                     >
                       <span className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-black"></span>
-                      Noir Mat
+                      {t('config.hardwareBlack', 'Noir Mat')}
                     </button>
                     <button
                       type="button"
@@ -912,7 +912,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       }`}
                     >
                       <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-400"></span>
-                      Chrome
+                      {t('config.hardwareChrome', 'Chrome')}
                     </button>
                   </div>
                 </div>
@@ -920,7 +920,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {/* Structure: Single vs Double */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">Ouvrant</label>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase">{t('config.structure', 'Ouvrant')}</label>
                     <select
                       value={door.doorStructure}
                       onChange={(e) => {
@@ -934,13 +934,13 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                       }}
                       className="w-full px-2 py-1 text-xs border border-slate-300 rounded bg-white"
                     >
-                      <option value="single">1 Vantail (Simple)</option>
-                      <option value="double">2 Vantaux (Double)</option>
+                      <option value="single">{t('config.singleDoor', '1 Vantail (Simple)')}</option>
+                      <option value="double">{t('config.doubleDoor', '2 Vantaux (Double)')}</option>
                     </select>
                   </div>
                   {isDouble && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-slate-400 uppercase">% Semi-fixe</label>
+                      <label className="block text-[10px] font-semibold text-slate-400 uppercase">{t('config.semiFixed', '% Semi-fixe')}</label>
                       <input 
                         type="number"
                         min={15}
@@ -956,18 +956,18 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 {/* Prices & Auto recalculation */}
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">Barème & Tarification</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">{t('config.pricing', 'Barème & Tarification')}</span>
                     <button
                       type="button"
                       onClick={() => handleAutoPrice(index)}
                       className="text-[10px] bg-nasaq-teal-subtle hover:bg-nasaq-teal/20 text-nasaq-teal border border-nasaq-teal/40 font-bold px-1.5 py-0.5 rounded transition flex items-center gap-1"
                     >
-                      <Sparkles className="w-2.5 h-2.5" /> Barème Auto
+                      <Sparkles className="w-2.5 h-2.5" /> {t('config.autoPrice', 'Barème Auto')}
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <span className="text-[9px] text-slate-400">Prix Unitaire (DA)</span>
+                      <span className="text-[9px] text-slate-400">{t('config.unitPrice', 'Prix Unitaire (DA)')}</span>
                       <input 
                         type="number"
                         step="any"
@@ -978,7 +978,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     </div>
                     {info.isPromoEnabled && (
                       <div>
-                        <span className="text-[9px] text-amber-700 font-semibold">Prix Promo (DA)</span>
+                        <span className="text-[9px] text-amber-700 font-semibold">{t('config.promoPrice', 'Prix Promo (DA)')}</span>
                         <input 
                           type="number"
                           step="any"
@@ -990,7 +990,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     )}
                   </div>
                   <div className="text-[10px] text-slate-500 font-medium">
-                    Calcul théorique : <strong className="text-nasaq-teal font-mono">{calculatedPrice.toLocaleString('fr-FR')} DA</strong>
+                    {t('config.calcTheoretical', 'Calcul théorique :')} <strong className="text-nasaq-teal font-mono">{calculatedPrice.toLocaleString('fr-FR')} DA</strong>
                   </div>
                 </div>
 
@@ -998,7 +998,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                 <div className="bg-sky-50/60 border border-sky-200 rounded-lg p-2.5 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sky-900 text-[11px] flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5 text-nasaq-blue" /> Vitrages ({door.glassPanes?.length || 0})
+                      <Eye className="w-3.5 h-3.5 text-nasaq-blue" /> {t('config.glassPanesLabel', 'Vitrages')} ({door.glassPanes?.length || 0})
                     </span>
                     <div className="flex items-center gap-1">
                       <button 
@@ -1006,14 +1006,14 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                         onClick={() => applyGlassPreset(index, '3-strips')}
                         className="px-1.5 py-0.5 bg-white border border-sky-300 rounded text-[9.5px] font-bold text-sky-700 hover:bg-sky-100"
                       >
-                        3 Bandes
+                        {t('config.glass3Strips', '3 Bandes')}
                       </button>
                       <button 
                         type="button" 
                         onClick={() => applyGlassPreset(index, 'none')}
                         className="px-1.5 py-0.5 bg-white border border-sky-300 rounded text-[9.5px] font-bold text-slate-600 hover:bg-slate-100"
                       >
-                        Plein
+                        {t('config.glassSolid', 'Plein')}
                       </button>
                     </div>
                   </div>
@@ -1021,13 +1021,13 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   {door.glassPanes && door.glassPanes.map((pane, gIdx) => (
                     <div key={gIdx} className="bg-white border border-slate-200 rounded-md p-2 space-y-1.5 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-sky-800 text-[10.5px]">Vitre #{gIdx + 1}</span>
+                        <span className="font-bold text-sky-800 text-[10.5px]">{t('config.paneNumber', 'Vitre #')}{gIdx + 1}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteGlass(index, gIdx)}
                           className="text-[10px] text-rose-500 hover:text-rose-700 font-semibold"
                         >
-                          ✕ Retirer
+                          ✕ {t('config.remove', 'Retirer')}
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
@@ -1142,7 +1142,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             <div className="bg-slate-800 text-white p-4 px-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Modifier la Fiche Client</h3>
+                <h3 className="font-bold text-sm">{t('clients.modal.editTitle', 'Modifier la Fiche Client')}</h3>
               </div>
               <button 
                 type="button" 
@@ -1155,7 +1155,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
 
             <form onSubmit={handleSaveClientEdit} className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Nom / Entreprise *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.name', 'Nom / Entreprise *')}</label>
                 <input 
                   type="text"
                   required
@@ -1167,7 +1167,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.phone', 'Téléphone *')}</label>
                 <input 
                   type="tel"
                   required
@@ -1179,7 +1179,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse de Chantier / Livraison</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.address', 'Adresse de Chantier / Livraison')}</label>
                 <input 
                   type="text"
                   placeholder="Adresse ou localisation du chantier"
@@ -1190,7 +1190,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Remarques & Notes Internes</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.notes', 'Remarques & Notes Internes')}</label>
                 <textarea 
                   rows={2}
                   placeholder="Notes particulières, préférences..."
@@ -1206,14 +1206,14 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                   onClick={() => setEditingClient(null)}
                   className="px-3.5 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-semibold transition"
                 >
-                  Annuler
+                  {t('clients.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdatingClient}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {isUpdatingClient ? 'Enregistrement...' : 'Enregistrer les Modifications'}
+                  {isUpdatingClient ? t('clients.modal.saving', 'Enregistrement...') : t('clients.modal.save', 'Enregistrer les Modifications')}
                 </button>
               </div>
             </form>

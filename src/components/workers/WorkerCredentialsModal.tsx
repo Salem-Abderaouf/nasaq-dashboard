@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Worker, WorkerAppCredentials, WorkerPermissions } from '../../types/database';
 import { PERMISSION_PRESETS } from '../../types/auth';
 import { AuthService } from '../../services/authService';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   X, 
   Key, 
@@ -29,6 +30,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
   onClose,
   onSaved
 }) => {
+  const { t } = useLanguage();
   // Load existing credentials or defaults
   const existingCreds = AuthService.getWorkerCredentials(worker.email || worker.id);
 
@@ -94,7 +96,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim()) {
-      alert('Veuillez renseigner un email ou identifiant valide.');
+      alert(t('common.required', 'Veuillez renseigner un email ou identifiant valide.'));
       return;
     }
 
@@ -112,77 +114,77 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
       onSaved(updatedCreds);
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de l\'enregistrement des accès.');
+      alert(err.message || t('common.error', 'Erreur lors de l\'enregistrement des accès.'));
     } finally {
       setSaving(false);
     }
   };
 
-  const permissionList: { key: keyof WorkerPermissions; label: string; desc: string; category: string }[] = [
+  const permissionList: { key: keyof WorkerPermissions; defaultLabel: string; defaultDesc: string; category: string }[] = [
     {
       key: 'canViewDashboard',
-      label: 'Tableau de bord exécutif',
-      desc: 'Consulter les indicateurs clés et graphiques de performance.',
+      defaultLabel: 'Tableau de bord exécutif',
+      defaultDesc: 'Consulter les indicateurs clés et graphiques de performance.',
       category: 'Général'
     },
     {
       key: 'canViewOrders',
-      label: 'Suivi des commandes',
-      desc: 'Accéder à la liste des commandes et leur détail technique.',
+      defaultLabel: 'Suivi des commandes',
+      defaultDesc: 'Accéder à la liste des commandes et leur détail technique.',
       category: 'Atelier & Vente'
     },
     {
       key: 'canChangeOrderStatus',
-      label: 'Mise à jour des statuts atelier',
-      desc: 'Faire passer les commandes en Usinage, Prêt, En transit ou Livré.',
+      defaultLabel: 'Mise à jour des statuts atelier',
+      defaultDesc: 'Faire passer les commandes en Usinage, Prêt, En transit ou Livré.',
       category: 'Atelier & Vente'
     },
     {
       key: 'canAccessAtelierCutSheets',
-      label: 'Fiches de débit & plans de coupe',
-      desc: 'Consulter et imprimer les cotes d\'usinage (sans prix affichés).',
+      defaultLabel: 'Fiches de débit & plans de coupe',
+      defaultDesc: 'Consulter et imprimer les cotes d\'usinage (sans prix affichés).',
       category: 'Atelier & Vente'
     },
     {
       key: 'canCreateOrders',
-      label: 'Studio 2D & Création de devis',
-      desc: 'Créer de nouvelles commandes, portes sur-mesure et imposte.',
+      defaultLabel: 'Studio 2D & Création de devis',
+      defaultDesc: 'Créer de nouvelles commandes, portes sur-mesure et imposte.',
       category: 'Showroom'
     },
     {
       key: 'canManageClients',
-      label: 'Gestion du répertoire clients',
-      desc: 'Consulter, ajouter et mettre à jour les comptes clients.',
+      defaultLabel: 'Gestion du répertoire clients',
+      defaultDesc: 'Consulter, ajouter et mettre à jour les comptes clients.',
       category: 'Showroom'
     },
     {
       key: 'canManageProspects',
-      label: 'Pipeline prospects & leads',
-      desc: 'Suivre les négociations commerciales et convertir des prospects.',
+      defaultLabel: 'Pipeline prospects & leads',
+      defaultDesc: 'Suivre les négociations commerciales et convertir des prospects.',
       category: 'Showroom'
     },
     {
       key: 'canViewFinancials',
-      label: 'Données financières & Prix réels',
-      desc: 'Voir les montants en DZD et remises. Si désactivé : mode atelier strict à 0 DA.',
+      defaultLabel: 'Données financières & Prix réels',
+      defaultDesc: 'Voir les montants en DZD et remises. Si désactivé : mode atelier strict à 0 DA.',
       category: 'Finances'
     },
     {
       key: 'canRecordPayments',
-      label: 'Encaissement d\'acomptes',
-      desc: 'Enregistrer des paiements et versements d\'acomptes en caisse.',
+      defaultLabel: 'Encaissement d\'acomptes',
+      defaultDesc: 'Enregistrer des paiements et versements d\'acomptes en caisse.',
       category: 'Finances'
     },
     {
       key: 'canExportDocuments',
-      label: 'Export documents & plans ZIP',
-      desc: 'Télécharger les fiches techniques, factures et archives ZIP de production.',
+      defaultLabel: 'Export documents & plans ZIP',
+      defaultDesc: 'Télécharger les fiches techniques, factures et archives ZIP de production.',
       category: 'Export'
     },
     {
       key: 'canAccessPayroll',
-      label: 'Gestion RH & Moteur de Paie',
-      desc: 'Consulter les salaires des collègues, avances et primes (sensible).',
+      defaultLabel: 'Gestion RH & Moteur de Paie',
+      defaultDesc: 'Consulter les salaires des collègues, avances et primes (sensible).',
       category: 'Direction / RH'
     }
   ];
@@ -199,13 +201,13 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2">
-                <span>Accès Application & Permissions</span>
+                <span>{t('workers.credsModal.title', 'Accès Application & Permissions')}</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-nasaq-gold/20 text-nasaq-gold-dark font-mono font-bold">
                   {worker.position}
                 </span>
               </h2>
               <p className="text-xs text-slate-500">
-                Configuration des identifiants et des droits pour <strong>{worker.name}</strong>
+                {t('workers.credsModal.subtitle', 'Configuration des identifiants et des droits pour')} <strong>{worker.name}</strong>
               </p>
             </div>
           </div>
@@ -225,9 +227,11 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
           {/* 1. App Access Toggle */}
           <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex items-center justify-between">
             <div>
-              <div className="font-bold text-slate-900 text-xs">Autoriser la connexion à l'application</div>
+              <div className="font-bold text-slate-900 text-xs">
+                {t('workers.credsModal.enableToggle', 'Autoriser la connexion à l\'application')}
+              </div>
               <div className="text-[11px] text-slate-500 mt-0.5">
-                Si activé, l'employé peut se connecter avec son email et mot de passe ci-dessous.
+                {t('workers.credsModal.enableDesc', 'Si activé, l\'employé peut se connecter avec son email et mot de passe ci-dessous.')}
               </div>
             </div>
 
@@ -248,13 +252,13 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
               <div className="space-y-3">
                 <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-nasaq-teal" />
-                  Identifiants de Connexion
+                  {t('workers.credsModal.loginSection', 'Identifiants de Connexion')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-semibold text-slate-600 mb-1">
-                      Email ou Identifiant de connexion
+                      {t('workers.credsModal.loginEmail', 'Email ou Identifiant de connexion')}
                     </label>
                     <div className="relative">
                       <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
@@ -272,7 +276,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="font-semibold text-slate-600">
-                        Mot de passe / Code PIN
+                        {t('workers.credsModal.password', 'Mot de passe / Code PIN')}
                       </label>
                       <button
                         type="button"
@@ -280,7 +284,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
                         className="text-[10px] text-nasaq-teal hover:underline flex items-center gap-1 font-semibold"
                       >
                         <RefreshCw className="w-2.5 h-2.5" />
-                        Générer
+                        {t('workers.credsModal.generate', 'Générer')}
                       </button>
                     </div>
                     <div className="relative">
@@ -310,16 +314,19 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-nasaq-gold" />
-                    Profils Prédéfinis (1 Clic)
+                    {t('workers.credsModal.presetsSection', 'Profils Prédéfinis (1 Clic)')}
                   </h3>
                   <span className="text-[10.5px] text-slate-400">
-                    Cliquez pour appliquer un jeu de droits adapté
+                    {t('workers.credsModal.presetsDesc', 'Cliquez pour appliquer un jeu de droits adapté')}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {PERMISSION_PRESETS.map((p) => {
                     const isSelected = selectedPresetId === p.id;
+                    const pLabel = t(`workers.preset.${p.id}`, p.label);
+                    const pDesc = t(`workers.presetDesc.${p.id}`, p.description);
+
                     return (
                       <button
                         key={p.id}
@@ -331,9 +338,9 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
                             : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                         }`}
                       >
-                        <div className="font-bold text-[11px] truncate">{p.label}</div>
+                        <div className="font-bold text-[11px] truncate">{pLabel}</div>
                         <div className={`text-[9.5px] mt-0.5 line-clamp-1 ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>
-                          {p.description}
+                          {pDesc}
                         </div>
                       </button>
                     );
@@ -345,13 +352,15 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
               <div className="space-y-3 pt-2 border-t border-slate-100">
                 <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-nasaq-teal" />
-                  Détail des Droits d'Accès Accordés
+                  {t('workers.credsModal.granularSection', 'Détail des Droits d\'Accès Accordés')}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
                   {permissionList.map((item) => {
                     const isGranted = permissions[item.key];
                     const isSensitive = item.key === 'canAccessPayroll' || item.key === 'canViewFinancials';
+                    const permLabel = t(`workers.perm.${item.key}`, item.defaultLabel);
+                    const permDesc = t(`workers.permDesc.${item.key}`, item.defaultDesc);
 
                     return (
                       <label
@@ -373,14 +382,14 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <span className={`font-bold text-[11px] ${isGranted ? 'text-slate-900' : 'text-slate-600'}`}>
-                              {item.label}
+                              {permLabel}
                             </span>
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
                               {item.category}
                             </span>
                           </div>
                           <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-                            {item.desc}
+                            {permDesc}
                           </p>
                         </div>
                       </label>
@@ -392,9 +401,11 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
           ) : (
             <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 space-y-2">
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <div className="font-bold text-slate-800 text-sm">Accès Application Désactivé</div>
+              <div className="font-bold text-slate-800 text-sm">
+                {t('workers.credsModal.disabledWarning', 'Accès Application Désactivé')}
+              </div>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Cet employé n'a pas accès à la plateforme. Pour lui attribuer un accès sécurisé, activez l'interrupteur ci-dessus.
+                {t('workers.credsModal.disabledDesc', 'Cet employé n\'a pas accès à la plateforme. Pour lui attribuer un accès sécurisé, activez l\'interrupteur ci-dessus.')}
               </p>
             </div>
           )}
@@ -406,7 +417,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition font-bold"
             >
-              Annuler
+              {t('common.cancel', 'Annuler')}
             </button>
 
             <button
@@ -415,7 +426,7 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
               className="px-5 py-2 rounded-xl bg-nasaq-teal hover:bg-nasaq-teal-dark text-white font-bold transition flex items-center gap-2 shadow-xs disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
-              <span>{saving ? 'Enregistrement...' : 'Enregistrer les Accès'}</span>
+              <span>{saving ? t('workers.modal.saving', 'Enregistrement...') : t('workers.credsModal.save', 'Enregistrer les Accès')}</span>
             </button>
           </div>
 

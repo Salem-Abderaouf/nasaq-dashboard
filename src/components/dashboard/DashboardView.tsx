@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import { Order, OrderStatus } from '../../types/database';
+import { useLanguage } from '../../context/LanguageContext';
 import { MetricsGrid } from './MetricsGrid';
 import { PipelineDistribution } from './PipelineDistribution';
 import { RecentOrdersTable } from './RecentOrdersTable';
@@ -21,6 +22,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRecordPayment,
   onSeedData
 }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [clientsCount, setClientsCount] = useState(0);
@@ -147,10 +149,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
-            NASAQ WPC — Vue d'Ensemble
+            {t('dashboard.bannerTitle', 'NASAQ WPC — Vue d\'Ensemble')}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Suivi des ventes showroom, fabrications atelier et recouvrements
+            {t('dashboard.bannerSubtitle', 'Suivi des ventes showroom, fabrications atelier et recouvrements')}
           </p>
         </div>
 
@@ -162,7 +164,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <span>{t('common.refresh', 'Actualiser')}</span>
           </button>
 
           <button
@@ -171,7 +173,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouveau Devis / Portes</span>
+            <span>{t('dashboard.newQuote', 'Nouveau Devis / Portes')}</span>
           </button>
         </div>
       </div>
@@ -216,10 +218,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {orders.length === 0 && !loading && (
         <div className="bg-gradient-to-r from-nasaq-teal-subtle to-nasaq-gold-subtle border border-nasaq-teal/20 rounded-2xl p-6 text-center space-y-3">
           <h3 className="font-cinzel text-base font-bold text-nasaq-teal-dark">
-            Bienvenue dans le Tableau de Bord NASAQ WPC
+            {t('dashboard.welcomeTitle', 'Bienvenue dans le Tableau de Bord NASAQ WPC')}
           </h3>
           <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Votre base de données Supabase est actuellement vide. Vous pouvez initialiser un jeu de données de démonstration pour tester toutes les fonctionnalités ou ouvrir directement le Studio de Configuration.
+            {t('dashboard.welcomeMessage', 'Votre base de données Supabase est actuellement vide. Vous pouvez initialiser un jeu de données de démonstration pour tester toutes les fonctionnalités ou ouvrir directement le Studio de Configuration.')}
           </p>
           <div className="flex justify-center gap-3 pt-1">
             <button
@@ -228,7 +230,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="px-4 py-2 bg-nasaq-gold hover:bg-nasaq-gold-dark text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Initialiser Démo Supabase
+              {t('dashboard.initDemo', 'Initialiser Démo Supabase')}
             </button>
             <button
               type="button"
@@ -236,7 +238,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
-              Créer Premier Devis
+              {t('dashboard.createFirstQuote', 'Créer Premier Devis')}
             </button>
           </div>
         </div>

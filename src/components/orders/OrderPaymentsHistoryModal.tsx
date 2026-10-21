@@ -10,7 +10,6 @@ import {
   CreditCard, 
   Clock, 
   CheckCircle2, 
-  AlertCircle, 
   Plus, 
   RefreshCw,
   Ban
@@ -72,7 +71,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
   }, [order.id]);
 
   const handleVoidPayment = async (paymentId: string) => {
-    if (!confirm('Voulez-vous vraiment annuler (void) cette transaction de paiement ?')) return;
+    if (!confirm(t('orderPayments.confirmVoid', 'Are you sure you want to void this transaction?'))) return;
 
     try {
       const { error } = await supabase
@@ -85,12 +84,12 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
       if (onRefreshOrders) onRefreshOrders();
     } catch (err: any) {
       console.error('Error voiding payment:', err);
-      alert(err.message || 'Erreur lors de l\'annulation du paiement.');
+      alert(err.message || t('orderPayments.voidError', 'Error voiding payment.'));
     }
   };
 
   const remaining = Math.max(0, currentOrder.total_amount - currentOrder.paid_amount);
-  const paymentMeta = getPaymentBadge(currentOrder.paid_amount, currentOrder.total_amount);
+  const paymentMeta = getPaymentBadge(currentOrder.paid_amount, currentOrder.total_amount, t);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-200">
@@ -103,13 +102,13 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
             </div>
             <div>
               <h3 className="font-bold text-sm flex items-center gap-2">
-                <span>{t('orders.paymentHistory', 'Historique des Versements')}</span>
+                <span>{t('orderPayments.title', 'Historique des Versements')}</span>
                 <span className="font-mono text-nasaq-gold text-xs px-2 py-0.5 bg-white/10 rounded-md">
                   {currentOrder.order_number}
                 </span>
               </h3>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Client : <strong className="text-slate-200">{currentOrder.clients?.name || 'Client sans nom'}</strong>
+                {t('common.client', 'Client')} : <strong className="text-slate-200">{currentOrder.clients?.name || 'N/A'}</strong>
               </p>
             </div>
           </div>
@@ -120,7 +119,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
               onClick={fetchPayments}
               disabled={loading}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-              title="Rafraîchir les versements"
+              title={t('common.refresh', 'Actualiser')}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -140,7 +139,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
               <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
-                Total Facturé
+                {t('orderPayments.totalInvoiced', 'Total Facturé')}
               </span>
               <div className="font-mono text-sm font-extrabold text-slate-800">
                 {formatMoney(currentOrder.total_amount)}
@@ -149,7 +148,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
 
             <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-center">
               <span className="text-[10px] text-emerald-700 uppercase font-bold block mb-0.5">
-                Total Versé
+                {t('orderPayments.totalPaid', 'Total Versé')}
               </span>
               <div className="font-mono text-sm font-extrabold text-emerald-700">
                 {formatMoney(currentOrder.paid_amount)}
@@ -162,7 +161,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
               <span className={`text-[10px] uppercase font-bold block mb-0.5 ${
                 remaining > 0 ? 'text-rose-700' : 'text-emerald-700'
               }`}>
-                Reste à Payer
+                {t('orderPayments.balanceDue', 'Reste à Payer')}
               </span>
               <div className={`font-mono text-sm font-extrabold ${
                 remaining > 0 ? 'text-rose-700' : 'text-emerald-700'
@@ -173,7 +172,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
 
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-center">
               <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">
-                Statut Règlement
+                {t('orderPayments.paymentStatus', 'Statut Règlement')}
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${paymentMeta.bg} ${paymentMeta.text}`}>
                 {paymentMeta.label}
@@ -186,7 +185,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
             <div className="flex items-center justify-between">
               <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-nasaq-teal" />
-                Versements Enregistrés ({payments.length})
+                {t('orderPayments.recordedPayments', 'Versements Enregistrés')} ({payments.length})
               </h4>
               {canRecordPayments && remaining > 0 && onRecordPayment && (
                 <button
@@ -198,7 +197,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                   className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Encaisser un Versement</span>
+                  <span>{t('orderPayments.recordNew', '+ Encaisser un Versement')}</span>
                 </button>
               )}
             </div>
@@ -206,12 +205,12 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
             {loading ? (
               <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
                 <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-nasaq-teal" />
-                <span>Chargement de l'historique des paiements...</span>
+                <span>{t('orderPayments.loading', 'Chargement de l\'historique des paiements...')}</span>
               </div>
             ) : payments.length === 0 ? (
               <div className="py-8 text-center text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                 <CreditCard className="w-8 h-8 mx-auto text-slate-300" />
-                <p>Aucun versement n'a encore été enregistré pour cette commande.</p>
+                <p>{t('orderPayments.noPayments', 'Aucun versement n\'a encore été enregistré pour cette commande.')}</p>
                 {canRecordPayments && remaining > 0 && onRecordPayment && (
                   <button
                     type="button"
@@ -222,7 +221,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg text-xs font-bold transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Enregistrer le premier acompte</span>
+                    <span>{t('orderPayments.recordFirst', 'Enregistrer le premier acompte')}</span>
                   </button>
                 )}
               </div>
@@ -231,11 +230,11 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-100 text-slate-500 text-[10.5px] uppercase font-bold">
                     <tr>
-                      <th className="py-2.5 px-3">Date</th>
-                      <th className="py-2.5 px-3">Montant Encaissé</th>
-                      <th className="py-2.5 px-3">Remarques / Mode</th>
-                      <th className="py-2.5 px-3">Statut</th>
-                      {isAdmin && <th className="py-2.5 px-3 text-right">Action</th>}
+                      <th className="py-2.5 px-3">{t('orderPayments.tableDate', 'Date')}</th>
+                      <th className="py-2.5 px-3">{t('orderPayments.tableAmount', 'Montant Encaissé')}</th>
+                      <th className="py-2.5 px-3">{t('orderPayments.tableNotes', 'Remarques / Mode')}</th>
+                      <th className="py-2.5 px-3">{t('orderPayments.tableStatus', 'Statut')}</th>
+                      {isAdmin && <th className="py-2.5 px-3 text-right">{t('orderPayments.tableAction', 'Action')}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -260,7 +259,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
 
                           {/* Notes */}
                           <td className="py-2.5 px-3 text-slate-600">
-                            {p.notes || <span className="text-slate-400 italic">Règlement standard</span>}
+                            {p.notes || <span className="text-slate-400 italic">{t('orderPayments.standardNote', 'Règlement standard')}</span>}
                           </td>
 
                           {/* Status */}
@@ -268,12 +267,12 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                             {isVoided ? (
                               <span className="inline-flex items-center gap-1 text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">
                                 <Ban className="w-3 h-3" />
-                                Annulé (Void)
+                                {t('orderPayments.voided', 'Annulé (Void)')}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
                                 <CheckCircle2 className="w-3 h-3" />
-                                Validé
+                                {t('orderPayments.validated', 'Validé')}
                               </span>
                             )}
                           </td>
@@ -286,9 +285,9 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                                   type="button"
                                   onClick={() => handleVoidPayment(p.id)}
                                   className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold"
-                                  title="Annuler cette transaction comptable (Réservé Admin)"
+                                  title="Void this payment transaction"
                                 >
-                                  Annuler
+                                  {t('common.cancel', 'Annuler')}
                                 </button>
                               ) : (
                                 <span className="text-slate-300 text-[10px] italic">—</span>
@@ -308,7 +307,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
         {/* Footer */}
         <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <div className="text-[11px] text-slate-500">
-            {payments.filter(p => p.status !== 'voided').length} versement(s) actif(s)
+            {payments.filter(p => p.status !== 'voided').length} {t('orderPayments.activeCount', 'versement(s) actif(s)')}
           </div>
 
           <div className="flex items-center gap-2">
@@ -317,7 +316,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
               onClick={onClose}
               className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition"
             >
-              Fermer
+              {t('common.close', 'Fermer')}
             </button>
           </div>
         </div>

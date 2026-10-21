@@ -504,7 +504,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                     type="button"
                     onClick={() => onStartOrderForClient(client)}
                     className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl text-xs font-bold shadow-2xs hover:shadow transition-all"
-                    title="Démarrer un nouveau projet / devis pour ce client dans le Studio 2D"
+                    title={t('clients.newOrderTooltip', 'Démarrer un nouveau projet / devis pour ce client dans le Studio 2D')}
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>{t('clients.newOrder', 'Nouvelle Commande')}</span>
@@ -517,7 +517,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                       type="button"
                       onClick={() => openClientStats(client)}
                       className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-nasaq-teal bg-slate-50 hover:bg-slate-100 border border-slate-200 py-1.5 px-1.5 rounded-lg transition"
-                      title="Afficher le relevé financier, versements et créances"
+                      title={t('clients.statementTooltip', 'Afficher le relevé financier, versements et créances')}
                     >
                       <ReceiptText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span className="truncate">{t('clients.statement', 'Relevé')}</span>
@@ -528,7 +528,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                       type="button"
                       onClick={() => openEditModal(client)}
                       className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-amber-700 bg-slate-50 hover:bg-amber-50/80 border border-slate-200 hover:border-amber-200 py-1.5 px-1.5 rounded-lg transition"
-                      title="Modifier les coordonnées du client"
+                      title={t('clients.editTooltip', 'Modifier les coordonnées du client')}
                     >
                       <Pencil className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span className="truncate">{t('clients.edit', 'Modifier')}</span>
@@ -539,7 +539,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                       type="button"
                       onClick={() => setClientToDelete(client)}
                       className="flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 py-1.5 px-1.5 rounded-lg transition"
-                      title="Supprimer ce client"
+                      title={t('clients.deleteTooltip', 'Supprimer ce client')}
                     >
                       <Trash2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600 shrink-0" />
                       <span className="truncate">{t('clients.delete', 'Supprimer')}</span>
@@ -565,7 +565,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   {t('clients.deleteConfirmTitle', 'Supprimer le Client')}
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Êtes-vous sûr de vouloir supprimer définitivement la fiche de <strong className="text-slate-800 font-bold">"{clientToDelete.name}"</strong> ?
+                  {t('clients.deleteConfirmPrompt', 'Êtes-vous sûr de vouloir supprimer définitivement la fiche de')} <strong className="text-slate-800 font-bold">"{clientToDelete.name}"</strong> ?
                 </p>
               </div>
               <button 
@@ -587,16 +587,16 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
 
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1 font-mono text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Nom :</span>
+                  <span className="text-slate-500">{t('clients.modal.name', 'Nom')} :</span>
                   <span className="font-bold text-slate-800">{clientToDelete.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Téléphone :</span>
+                  <span className="text-slate-500">{t('clients.modal.phone', 'Téléphone')} :</span>
                   <span className="text-slate-800">{clientToDelete.phone}</span>
                 </div>
                 {clientToDelete.orders && (
                   <div className="flex justify-between pt-1 border-t border-slate-200">
-                    <span className="text-slate-500">Commandes liées :</span>
+                    <span className="text-slate-500">{t('clients.ordersLinked', 'Commandes liées :')}</span>
                     <span className="font-bold text-slate-800">{clientToDelete.orders.length}</span>
                   </div>
                 )}
@@ -621,7 +621,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                 {deleting ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Suppression...</span>
+                    <span>{t('clients.deleting', 'Suppression...')}</span>
                   </>
                 ) : (
                   <>
@@ -655,7 +655,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
 
             <form onSubmit={handleCreateClient} className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Nom / Entreprise *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.name', 'Nom / Entreprise *')}</label>
                 <input 
                   type="text"
                   required
@@ -667,7 +667,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.phone', 'Téléphone *')}</label>
                 <input 
                   type="tel"
                   required
@@ -679,7 +679,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse de Livraison / Chantier</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.address', 'Adresse de Livraison / Chantier')}</label>
                 <input 
                   type="text"
                   placeholder="ex: Résidence Les Pins, Oran"
@@ -690,7 +690,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Notes / Instructions</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.notes', 'Notes / Instructions')}</label>
                 <textarea 
                   rows={2}
                   placeholder="Notes commerciales, type de projet..."
@@ -714,7 +714,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   disabled={submitting}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl font-bold transition disabled:opacity-50"
                 >
-                  {submitting ? 'Création...' : t('clients.newClient', 'Créer le Client')}
+                  {submitting ? t('clients.modal.creating', 'Création...') : t('clients.modal.create', 'Créer le Client')}
                 </button>
               </div>
             </form>
@@ -729,7 +729,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
             <div className="bg-slate-800 text-white p-4 px-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Modifier la Fiche Client</h3>
+                <h3 className="font-bold text-sm">{t('clients.modal.editTitle', 'Modifier la Fiche Client')}</h3>
               </div>
               <button 
                 type="button" 
@@ -742,7 +742,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
 
             <form onSubmit={handleUpdateClient} className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Nom / Entreprise *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.name', 'Nom / Entreprise *')}</label>
                 <input 
                   type="text"
                   required
@@ -754,7 +754,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.phone', 'Téléphone *')}</label>
                 <input 
                   type="tel"
                   required
@@ -766,7 +766,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse de Chantier / Livraison</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.address', 'Adresse de Chantier / Livraison')}</label>
                 <input 
                   type="text"
                   placeholder="Adresse ou localisation du chantier"
@@ -777,7 +777,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Remarques & Notes Internes</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.notes', 'Remarques & Notes Internes')}</label>
                 <textarea 
                   rows={2}
                   placeholder="Notes particulières, préférences..."
@@ -800,7 +800,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   disabled={updating}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl font-bold transition disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {updating ? 'Enregistrement...' : 'Enregistrer les Modifications'}
+                  {updating ? t('clients.modal.saving', 'Enregistrement...') : t('clients.modal.save', 'Enregistrer les Modifications')}
                 </button>
               </div>
             </form>
@@ -815,14 +815,14 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
             <div className="bg-slate-800 text-white p-4 px-5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <ReceiptText className="w-5 h-5 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Relevé Financier & Créances — {selectedClientForStats.name}</h3>
+                <h3 className="font-bold text-sm">{t('clients.ledgerTitle', 'Relevé Financier & Créances')} — {selectedClientForStats.name}</h3>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => openEditModal(selectedClientForStats)}
                   className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-200 hover:text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition border border-slate-600"
-                  title="Modifier les coordonnées de ce client"
+                  title={t('clients.editDetails', 'Modifier les coordonnées de ce client')}
                 >
                   <Pencil className="w-3 h-3 text-nasaq-gold" />
                   <span>{t('clients.edit', 'Modifier')}</span>
@@ -839,25 +839,33 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
               {loadingStats || !clientStats ? (
-                <div className="py-8 text-center text-slate-400">Calcul du relevé client...</div>
+                <div className="py-8 text-center text-slate-400">{t('clients.calcStatement', 'Calcul du relevé client...')}</div>
               ) : (
                 <>
                   {/* KPI Cards */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Commandes</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        {t('orders.itemsCount', 'Commandes')}
+                      </span>
                       <div className="font-mono text-base font-extrabold text-slate-800">{clientStats.totalOrders}</div>
                     </div>
                     <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center">
-                      <span className="text-[10px] text-slate-400 uppercase font-bold">Total Facturé</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">
+                        {t('orderPayments.totalInvoiced', 'Total Facturé')}
+                      </span>
                       <div className="font-mono text-sm font-extrabold text-slate-900">{formatMoney(clientStats.totalValue)}</div>
                     </div>
                     <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-[10px] text-emerald-700 uppercase font-bold">Total Réglé</span>
+                      <span className="text-[10px] text-emerald-700 uppercase font-bold">
+                        {t('orderPayments.totalPaid', 'Total Réglé')}
+                      </span>
                       <div className="font-mono text-sm font-extrabold text-emerald-700">{formatMoney(clientStats.totalPaid)}</div>
                     </div>
                     <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-center">
-                      <span className="text-[10px] text-rose-700 uppercase font-bold">Reste Dû</span>
+                      <span className="text-[10px] text-rose-700 uppercase font-bold">
+                        {t('orderPayments.balanceDue', 'Reste Dû')}
+                      </span>
                       <div className="font-mono text-sm font-extrabold text-rose-700">{formatMoney(clientStats.outstanding)}</div>
                     </div>
                   </div>
@@ -866,21 +874,21 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                   <div className="space-y-2 pt-2">
                     <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
                       <CreditCard className="w-4 h-4 text-nasaq-teal" />
-                      Derniers Règlements Encaissés
+                      {t('orderPayments.recordedPayments', 'Derniers Règlements Encaissés')}
                     </h4>
                     {clientStats.recentPayments.length === 0 ? (
                       <p className="text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg">
-                        Aucun paiement enregistré pour ce client.
+                        {t('orderPayments.noPayments', 'Aucun paiement enregistré pour ce client.')}
                       </p>
                     ) : (
                       <div className="border border-slate-200 rounded-xl overflow-hidden">
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-100 text-slate-500 text-[10px] uppercase font-bold">
                             <tr>
-                              <th className="py-2 px-3">Date</th>
-                              <th className="py-2 px-3">Commande</th>
-                              <th className="py-2 px-3">Montant</th>
-                              <th className="py-2 px-3">Notes</th>
+                              <th className="py-2 px-3">{t('orderPayments.tableDate', 'Date')}</th>
+                              <th className="py-2 px-3">{t('orders.number', 'Commande')}</th>
+                              <th className="py-2 px-3">{t('orderPayments.tableAmount', 'Montant')}</th>
+                              <th className="py-2 px-3">{t('orderPayments.tableNotes', 'Notes')}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -907,7 +915,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                 onClick={() => setSelectedClientForStats(null)}
                 className="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold"
               >
-                Fermer
+                {t('common.close', 'Fermer')}
               </button>
             </div>
           </div>

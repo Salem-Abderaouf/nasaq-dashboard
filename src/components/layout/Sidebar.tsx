@@ -104,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={onToggleCollapse}
               className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition"
-              title="Réduire la barre latérale"
+              title={t('nav.collapse', 'Réduire la barre latérale')}
             >
               {isRtl ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>
@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={onToggleCollapse}
             className="flex items-center justify-center p-1.5 rounded-xl hover:bg-white/10 transition group"
-            title="Agrandir la barre latérale"
+            title={t('nav.expand', 'Agrandir la barre latérale')}
           >
             <div className="bg-white rounded-md p-1 flex items-center justify-center shadow-xs">
               <img src="/nasaq-logo-cropped.png" alt="NASAQ" className="h-6 w-auto object-contain" />
@@ -178,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <div className="overflow-hidden leading-tight">
               <div className="text-[10px] text-slate-400 font-mono truncate">hqgburjxfuyvyeotmqae</div>
-              <div className="text-[10px] text-emerald-400 font-bold">Supabase Connecté</div>
+              <div className="text-[10px] text-emerald-400 font-bold">{t('nav.supabaseConnected', 'Supabase Connecté')}</div>
             </div>
           )}
         </div>
@@ -229,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onSeedData}
               disabled={isSeeding}
               className="w-full py-1.5 px-2 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-light border border-nasaq-gold/40 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-              title="Injecter des données d'exemples dans Supabase (Clients, Portes, RH)"
+              title={t('nav.seedTooltip', "Injecter des données d'exemples dans Supabase (Clients, Portes, RH)")}
             >
               <Sparkles className="w-3 h-3 text-nasaq-gold" />
               {isSeeding ? t('nav.seeding', 'Injection...') : t('nav.seedData', 'Initialiser Démo Supabase')}

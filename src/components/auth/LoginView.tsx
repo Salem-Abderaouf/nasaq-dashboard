@@ -166,12 +166,12 @@ export const LoginView: React.FC = () => {
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Direction Générale (Admin)</div>
-                    <div className="text-[10px] text-slate-500 font-mono">jolylip@gmail.com • Accès total</div>
+                    <div className="text-xs font-bold text-slate-800">{t('auth.adminRole', 'Direction Générale (Admin)')}</div>
+                    <div className="text-[10px] text-slate-500 font-mono">{t('auth.adminDesc', 'jolylip@gmail.com • Accès total')}</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-nasaq-gold-dark group-hover:translate-x-0.5 transition font-mono">
-                  Entrer →
+                  {t('auth.enter', 'Entrer →')}
                 </span>
               </button>
 
@@ -186,12 +186,12 @@ export const LoginView: React.FC = () => {
                     <Hammer className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Rachid (Chef d'Atelier)</div>
-                    <div className="text-[10px] text-slate-500">Mode Atelier : fiches de débit, usinage, sans prix</div>
+                    <div className="text-xs font-bold text-slate-800">{t('auth.workshopRole', "Rachid (Chef d'Atelier)")}</div>
+                    <div className="text-[10px] text-slate-500">{t('auth.workshopDesc', 'Mode Atelier : fiches de débit, usinage, sans prix')}</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-nasaq-teal group-hover:translate-x-0.5 transition font-mono">
-                  Entrer →
+                  {t('auth.enter', 'Entrer →')}
                 </span>
               </button>
 
@@ -206,19 +206,19 @@ export const LoginView: React.FC = () => {
                     <Briefcase className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-800">Sofiane (Commercial Showroom)</div>
-                    <div className="text-[10px] text-slate-500">Mode Vente : Studio devis 2D, clients, acomptes</div>
+                    <div className="text-xs font-bold text-slate-800">{t('auth.commercialRole', 'Sofiane (Commercial Showroom)')}</div>
+                    <div className="text-[10px] text-slate-500">{t('auth.commercialDesc', 'Mode Vente : Studio devis 2D, clients, acomptes')}</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-700 group-hover:translate-x-0.5 transition font-mono">
-                  Entrer →
+                  {t('auth.enter', 'Entrer →')}
                 </span>
               </button>
             </div>
           </div>
 
           <div className="text-center text-[10.5px] text-slate-400">
-            Contrôle d'accès basé sur les rôles (RBAC) & RLS Supabase
+            {t('auth.rbacNote', "Contrôle d'accès basé sur les rôles (RBAC) & RLS Supabase")}
           </div>
         </div>
 

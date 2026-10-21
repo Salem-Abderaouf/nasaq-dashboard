@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layers, ArrowRight } from 'lucide-react';
 import { formatMoney } from '../../utils/formatters';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface DoorLeaderboardItem {
   reference: string;
@@ -19,6 +20,8 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
   items,
   onViewCatalog
 }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-3.5 flex flex-col justify-between">
       <div>
@@ -27,7 +30,9 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
             <div className="w-7 h-7 rounded-lg bg-nasaq-teal-subtle text-nasaq-teal flex items-center justify-center">
               <Layers className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-bold text-slate-900">Modèles WPC les Plus Vendus</h2>
+            <h2 className="text-sm font-bold text-slate-900">
+              {t('dashboard.topDoors', 'Modèles WPC les Plus Vendus')}
+            </h2>
           </div>
           {onViewCatalog && (
             <button
@@ -35,7 +40,7 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
               onClick={onViewCatalog}
               className="text-xs text-nasaq-teal font-bold hover:underline flex items-center gap-1"
             >
-              <span>Catalogue</span>
+              <span>{t('dashboard.catalogLink', 'Catalogue')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
@@ -44,7 +49,7 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
         <div className="space-y-2">
           {items.length === 0 ? (
             <div className="text-center py-8 text-slate-400 text-xs italic">
-              Aucune donnée de vente pour le moment.
+              {t('dashboard.noTopDoors', 'Aucune donnée de vente pour le moment.')}
             </div>
           ) : (
             items.slice(0, 5).map((item, idx) => (
@@ -63,7 +68,7 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
                 </div>
 
                 <div className="text-right">
-                  <div className="font-bold text-slate-900 font-mono">{item.quantity} unités</div>
+                  <div className="font-bold text-slate-900 font-mono">{item.quantity} {t('dashboard.units', 'unités')}</div>
                   <div className="text-[11px] text-nasaq-teal font-mono font-semibold">{formatMoney(item.revenue)}</div>
                 </div>
               </div>
@@ -73,7 +78,7 @@ export const TopDoorsLeaderboard: React.FC<TopDoorsLeaderboardProps> = ({
       </div>
 
       <div className="p-3 bg-nasaq-gold-subtle/80 border border-nasaq-gold/30 rounded-xl text-[11px] text-nasaq-gold-dark font-medium leading-relaxed">
-        💡 <strong>Note Atelier :</strong> Les portes composites WPC assurent 100% d'étanchéité, aucune déformation et une durabilité supérieure face au bois massif.
+        {t('dashboard.workshopNote', '💡 Note Atelier : Les portes composites WPC assurent 100% d\'étanchéité, aucune déformation et une durabilité supérieure face au bois massif.')}
       </div>
     </div>
   );

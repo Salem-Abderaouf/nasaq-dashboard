@@ -1,6 +1,7 @@
 import React from 'react';
 import { OrderStatus } from '../../types/database';
 import { getOrderStatusMeta } from '../../utils/formatters';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface PipelineDistributionProps {
   statusCounts: Record<OrderStatus, number>;
@@ -23,17 +24,22 @@ export const PipelineDistribution: React.FC<PipelineDistributionProps> = ({
   statusCounts,
   onSelectStatus
 }) => {
+  const { t } = useLanguage();
   const totalOrders = Object.values(statusCounts).reduce((acc, c) => acc + c, 0) || 1;
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Pipeline des Commandes (9 Étapes)</h2>
-          <p className="text-xs text-slate-500">Cycle de vie de la commande : de la conception au montage final</p>
+          <h2 className="text-sm font-bold text-slate-900">
+            {t('dashboard.pipelineTitle', 'Pipeline des Commandes (9 Étapes)')}
+          </h2>
+          <p className="text-xs text-slate-500">
+            {t('dashboard.pipelineSubtitle', 'Cycle de vie de la commande : de la conception au montage final')}
+          </p>
         </div>
         <div className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-full">
-          Total : {Object.values(statusCounts).reduce((acc, c) => acc + c, 0)} commandes
+          {t('dashboard.totalOrdersBadge', 'Total : {count} commandes').replace('{count}', String(Object.values(statusCounts).reduce((acc, c) => acc + c, 0)))}
         </div>
       </div>
 
@@ -43,7 +49,7 @@ export const PipelineDistribution: React.FC<PipelineDistributionProps> = ({
           const count = statusCounts[stage] || 0;
           if (count === 0) return null;
           const percent = (count / totalOrders) * 100;
-          const meta = getOrderStatusMeta(stage);
+          const meta = getOrderStatusMeta(stage, t);
 
           let barColor = 'bg-slate-400';
           if (stage === 'confirmed') barColor = 'bg-blue-500';
@@ -71,7 +77,7 @@ export const PipelineDistribution: React.FC<PipelineDistributionProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9 gap-2.5 pt-1">
         {STAGES.map(stage => {
           const count = statusCounts[stage] || 0;
-          const meta = getOrderStatusMeta(stage);
+          const meta = getOrderStatusMeta(stage, t);
 
           return (
             <div

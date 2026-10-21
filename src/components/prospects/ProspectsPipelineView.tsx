@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import { Prospect, ProspectStatus } from '../../types/database';
 import { getProspectStatusMeta, formatDate } from '../../utils/formatters';
+import { useLanguage } from '../../context/LanguageContext';
 import { 
   TrendingUp, 
   Plus, 
@@ -15,16 +16,17 @@ import {
   Table2
 } from 'lucide-react';
 
-const STAGES: { id: ProspectStatus; label: string; color: string; badgeColor: string }[] = [
-  { id: 'new', label: '1. Nouveau', color: 'border-blue-300 bg-blue-50/40', badgeColor: 'bg-blue-100 text-blue-800' },
-  { id: 'contacted', label: '2. Contacté', color: 'border-purple-300 bg-purple-50/40', badgeColor: 'bg-purple-100 text-purple-800' },
-  { id: 'interested', label: '3. Intéressé', color: 'border-amber-300 bg-amber-50/40', badgeColor: 'bg-amber-100 text-amber-800' },
-  { id: 'negotiation', label: '4. Négociation', color: 'border-indigo-300 bg-indigo-50/40', badgeColor: 'bg-indigo-100 text-indigo-800' },
-  { id: 'converted', label: '5. Converti Client', color: 'border-emerald-300 bg-emerald-50/40', badgeColor: 'bg-emerald-100 text-emerald-800' },
-  { id: 'lost', label: '6. Perdu', color: 'border-rose-300 bg-rose-50/40', badgeColor: 'bg-rose-100 text-rose-800' }
+const STAGES: { id: ProspectStatus; defaultLabel: string; color: string; badgeColor: string }[] = [
+  { id: 'new', defaultLabel: '1. Nouveau', color: 'border-blue-300 bg-blue-50/40', badgeColor: 'bg-blue-100 text-blue-800' },
+  { id: 'contacted', defaultLabel: '2. Contacté', color: 'border-purple-300 bg-purple-50/40', badgeColor: 'bg-purple-100 text-purple-800' },
+  { id: 'interested', defaultLabel: '3. Intéressé', color: 'border-amber-300 bg-amber-50/40', badgeColor: 'bg-amber-100 text-amber-800' },
+  { id: 'negotiation', defaultLabel: '4. Négociation', color: 'border-indigo-300 bg-indigo-50/40', badgeColor: 'bg-indigo-100 text-indigo-800' },
+  { id: 'converted', defaultLabel: '5. Converti Client', color: 'border-emerald-300 bg-emerald-50/40', badgeColor: 'bg-emerald-100 text-emerald-800' },
+  { id: 'lost', defaultLabel: '6. Perdu', color: 'border-rose-300 bg-rose-50/40', badgeColor: 'bg-rose-100 text-rose-800' }
 ];
 
 export const ProspectsPipelineView: React.FC = () => {
+  const { t, isRtl } = useLanguage();
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -72,13 +74,14 @@ export const ProspectsPipelineView: React.FC = () => {
       setProspects(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
     } catch (err) {
       console.error('Error updating prospect status:', err);
-      alert('Erreur lors de la mise à jour du prospect.');
+      alert(t('prospects.updateError', 'Erreur lors de la mise à jour du prospect.'));
     }
   };
 
   // Convert Prospect to Client (section 4.3 of business.md)
   const handleConvert = async (prospect: Prospect) => {
-    if (!confirm(`Convertir le prospect "${prospect.name}" en client formel ?`)) return;
+    const confirmMsg = t('prospects.confirmConvert', 'Convertir le prospect "{name}" en client formel ?').replace('{name}', prospect.name);
+    if (!confirm(confirmMsg)) return;
 
     setConvertingId(prospect.id);
     try {
@@ -94,10 +97,11 @@ export const ProspectsPipelineView: React.FC = () => {
 
       // 2. Update status to converted
       await handleUpdateStatus(prospect.id, 'converted');
-      alert(`Prospect "${prospect.name}" converti avec succès dans le répertoire des clients !`);
+      const successMsg = t('prospects.convertSuccess', 'Prospect "{name}" converti avec succès dans le répertoire des clients !').replace('{name}', prospect.name);
+      alert(successMsg);
     } catch (err: any) {
       console.error('Error converting prospect:', err);
-      alert(err.message || 'Erreur lors de la conversion.');
+      alert(err.message || t('common.error', 'Erreur'));
     } finally {
       setConvertingId(null);
     }
@@ -106,7 +110,7 @@ export const ProspectsPipelineView: React.FC = () => {
   const handleCreateProspect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
-      alert('Nom et téléphone requis.');
+      alert(t('prospects.createError', 'Nom et téléphone requis.'));
       return;
     }
 
@@ -134,7 +138,7 @@ export const ProspectsPipelineView: React.FC = () => {
       setStatus('new');
     } catch (err: any) {
       console.error('Error creating prospect:', err);
-      alert(err.message || 'Erreur lors de la création du prospect.');
+      alert(err.message || t('prospects.createError', 'Erreur lors de la création du prospect.'));
     } finally {
       setSubmitting(false);
     }
@@ -158,10 +162,10 @@ export const ProspectsPipelineView: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-cinzel text-xl md:text-2xl font-bold text-nasaq-teal-dark">
-            Pipeline des Prospects & Opportunités
+            {t('prospects.title', 'Pipeline des Prospects & Opportunités')}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Suivi des 6 étapes de négociation et conversion directe en clients
+            {t('prospects.subtitle', 'Suivi des 6 étapes de négociation et conversion directe en clients')}
           </p>
         </div>
 
@@ -173,7 +177,7 @@ export const ProspectsPipelineView: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <span>{t('common.refresh', 'Actualiser')}</span>
           </button>
 
           <button
@@ -182,7 +186,7 @@ export const ProspectsPipelineView: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>Nouveau Prospect</span>
+            <span>{t('prospects.newProspect', 'Nouveau Prospect')}</span>
           </button>
         </div>
       </div>
@@ -193,7 +197,7 @@ export const ProspectsPipelineView: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input 
             type="text"
-            placeholder="Rechercher par nom, téléphone, ville..."
+            placeholder={t('prospects.searchPlaceholder', 'Rechercher par nom, téléphone, ville...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal transition"
@@ -201,7 +205,7 @@ export const ProspectsPipelineView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium">Affichage :</span>
+          <span className="text-xs text-slate-400 font-medium">{t('prospects.viewLabel', 'Affichage :')}</span>
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
             <button
               type="button"
@@ -213,7 +217,7 @@ export const ProspectsPipelineView: React.FC = () => {
               }`}
             >
               <Columns3 className="w-3.5 h-3.5" />
-              <span>Kanban</span>
+              <span>{t('prospects.viewKanban', 'Kanban')}</span>
             </button>
             <button
               type="button"
@@ -225,7 +229,7 @@ export const ProspectsPipelineView: React.FC = () => {
               }`}
             >
               <Table2 className="w-3.5 h-3.5" />
-              <span>Liste</span>
+              <span>{t('prospects.viewTable', 'Liste')}</span>
             </button>
           </div>
         </div>
@@ -237,6 +241,7 @@ export const ProspectsPipelineView: React.FC = () => {
           <div className="flex gap-4 items-start w-max min-w-full">
             {STAGES.map(stage => {
               const stageProspects = filteredProspects.filter(p => p.status === stage.id);
+              const stageLabel = t(`prospects.status.${stage.id}`, stage.defaultLabel);
 
               return (
                 <div 
@@ -245,7 +250,7 @@ export const ProspectsPipelineView: React.FC = () => {
                 >
                   {/* Column Header */}
                   <div className="flex items-center justify-between pb-2 mb-3 border-b border-black/10 shrink-0">
-                    <span className="font-bold text-xs text-slate-800">{stage.label}</span>
+                    <span className="font-bold text-xs text-slate-800">{stageLabel}</span>
                     <span className="w-5 h-5 rounded-full bg-white text-slate-700 font-mono text-[11px] font-extrabold flex items-center justify-center shadow-xs">
                       {stageProspects.length}
                     </span>
@@ -255,7 +260,7 @@ export const ProspectsPipelineView: React.FC = () => {
                   <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
                     {stageProspects.length === 0 ? (
                       <div className="h-28 flex items-center justify-center text-[11px] text-slate-400 italic bg-white/40 rounded-xl border border-dashed border-slate-300">
-                        Aucun lead
+                        {t('prospects.noLeads', 'Aucun lead')}
                       </div>
                     ) : (
                       stageProspects.map(p => (
@@ -291,12 +296,12 @@ export const ProspectsPipelineView: React.FC = () => {
                               onChange={(e) => handleUpdateStatus(p.id, e.target.value as ProspectStatus)}
                               className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 font-medium focus:outline-none"
                             >
-                              <option value="new">Nouveau</option>
-                              <option value="contacted">Contacté</option>
-                              <option value="interested">Intéressé</option>
-                              <option value="negotiation">Négociation</option>
-                              <option value="converted">Converti</option>
-                              <option value="lost">Perdu</option>
+                              <option value="new">{t('prospects.status.new', 'Nouveau')}</option>
+                              <option value="contacted">{t('prospects.status.contacted', 'Contacté')}</option>
+                              <option value="interested">{t('prospects.status.interested', 'Intéressé')}</option>
+                              <option value="negotiation">{t('prospects.status.negotiation', 'Négociation')}</option>
+                              <option value="converted">{t('prospects.status.converted', 'Converti')}</option>
+                              <option value="lost">{t('prospects.status.lost', 'Perdu')}</option>
                             </select>
 
                             {p.status !== 'converted' ? (
@@ -305,14 +310,14 @@ export const ProspectsPipelineView: React.FC = () => {
                                 onClick={() => handleConvert(p)}
                                 disabled={convertingId === p.id}
                                 className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs disabled:opacity-50"
-                                title="Convertir en client formel"
+                                title={t('prospects.convertToClient', 'Convertir en client formel')}
                               >
                                 <UserCheck className="w-3 h-3" />
-                                <span>Client</span>
+                                <span>{t('prospects.convertToClient', 'Client')}</span>
                               </button>
                             ) : (
                               <span className="text-[9.5px] text-emerald-600 font-bold px-1.5 py-0.5 rounded bg-emerald-50">
-                                ✓ Converti
+                                {t('prospects.convertedBadge', '✓ Converti')}
                               </span>
                             )}
                           </div>
@@ -332,24 +337,24 @@ export const ProspectsPipelineView: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-4">Nom / Contact</th>
-                  <th className="py-3 px-4">Téléphone</th>
-                  <th className="py-3 px-4">Adresse</th>
-                  <th className="py-3 px-4">Étape</th>
-                  <th className="py-3 px-4">Notes</th>
-                  <th className="py-3 px-4 text-center">Action</th>
+                  <th className="py-3 px-4">{t('prospects.table.contact', 'Nom / Contact')}</th>
+                  <th className="py-3 px-4">{t('clients.phone', 'Téléphone')}</th>
+                  <th className="py-3 px-4">{t('clients.address', 'Adresse')}</th>
+                  <th className="py-3 px-4">{t('prospects.table.stage', 'Étape')}</th>
+                  <th className="py-3 px-4">{t('common.notes', 'Notes')}</th>
+                  <th className="py-3 px-4 text-center">{t('common.actions', 'Action')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredProspects.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-slate-400 italic">
-                      Aucun prospect trouvé.
+                      {t('prospects.noProspectsFound', 'Aucun prospect trouvé.')}
                     </td>
                   </tr>
                 ) : (
                   filteredProspects.map(p => {
-                    const meta = getProspectStatusMeta(p.status);
+                    const meta = getProspectStatusMeta(p.status, t);
                     return (
                       <tr key={p.id} className="hover:bg-slate-50/70 transition">
                         <td className="py-3 px-4 font-bold text-slate-900">{p.name}</td>
@@ -361,12 +366,12 @@ export const ProspectsPipelineView: React.FC = () => {
                             onChange={(e) => handleUpdateStatus(p.id, e.target.value as ProspectStatus)}
                             className={`text-[10.5px] font-bold px-2 py-1 rounded-lg border ${meta.bg}`}
                           >
-                            <option value="new">Nouveau</option>
-                            <option value="contacted">Contacté</option>
-                            <option value="interested">Intéressé</option>
-                            <option value="negotiation">Négociation</option>
-                            <option value="converted">Converti</option>
-                            <option value="lost">Perdu</option>
+                            <option value="new">{t('prospects.status.new', 'Nouveau')}</option>
+                            <option value="contacted">{t('prospects.status.contacted', 'Contacté')}</option>
+                            <option value="interested">{t('prospects.status.interested', 'Intéressé')}</option>
+                            <option value="negotiation">{t('prospects.status.negotiation', 'Négociation')}</option>
+                            <option value="converted">{t('prospects.status.converted', 'Converti')}</option>
+                            <option value="lost">{t('prospects.status.lost', 'Perdu')}</option>
                           </select>
                         </td>
                         <td className="py-3 px-4 text-slate-500 truncate max-w-xs">{p.notes || '-'}</td>
@@ -379,10 +384,10 @@ export const ProspectsPipelineView: React.FC = () => {
                               className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg transition inline-flex items-center gap-1"
                             >
                               <UserCheck className="w-3.5 h-3.5" />
-                              <span>Convertir</span>
+                              <span>{t('prospects.convert', 'Convertir')}</span>
                             </button>
                           ) : (
-                            <span className="text-emerald-600 font-bold text-[11px]">Client Enregistré</span>
+                            <span className="text-emerald-600 font-bold text-[11px]">{t('prospects.clientRegistered', 'Client Enregistré')}</span>
                           )}
                         </td>
                       </tr>
@@ -402,7 +407,7 @@ export const ProspectsPipelineView: React.FC = () => {
             <div className="bg-nasaq-teal text-white p-4 px-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-nasaq-gold" />
-                <h3 className="font-bold text-sm">Nouveau Prospect / Lead</h3>
+                <h3 className="font-bold text-sm">{t('prospects.modal.title', 'Nouveau Prospect / Lead')}</h3>
               </div>
               <button 
                 type="button" 
@@ -415,7 +420,7 @@ export const ProspectsPipelineView: React.FC = () => {
 
             <form onSubmit={handleCreateProspect} className="p-5 space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Nom / Contact *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.name', 'Nom / Contact *')}</label>
                 <input 
                   type="text"
                   required
@@ -427,7 +432,7 @@ export const ProspectsPipelineView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone *</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.phone', 'Téléphone *')}</label>
                 <input 
                   type="text"
                   required
@@ -439,7 +444,7 @@ export const ProspectsPipelineView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse / Ville</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.address', 'Adresse / Ville')}</label>
                 <input 
                   type="text"
                   placeholder="ex: Cheraga, Alger"
@@ -450,24 +455,24 @@ export const ProspectsPipelineView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Étape Initiale</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.initialStage', 'Étape Initiale')}</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as ProspectStatus)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none bg-white font-medium"
                 >
-                  <option value="new">1. Nouveau Lead</option>
-                  <option value="contacted">2. Contact Établi</option>
-                  <option value="interested">3. Intéressé par le catalogue</option>
-                  <option value="negotiation">4. En Négociation de Devis</option>
+                  <option value="new">1. {t('prospects.status.new', 'Nouveau Lead')}</option>
+                  <option value="contacted">2. {t('prospects.status.contacted', 'Contact Établi')}</option>
+                  <option value="interested">3. {t('prospects.status.interested', 'Intéressé')}</option>
+                  <option value="negotiation">4. {t('prospects.status.negotiation', 'En Négociation de Devis')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Besoins / Spécifications</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.notes', 'Besoins / Spécifications')}</label>
                 <textarea 
                   rows={2}
-                  placeholder="Modèles demandés, nombre de portes..."
+                  placeholder={t('prospects.modal.notesPlaceholder', 'Modèles demandés, nombre de portes...')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
@@ -481,14 +486,14 @@ export const ProspectsPipelineView: React.FC = () => {
                   disabled={submitting}
                   className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
-                  Annuler
+                  {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  {submitting ? 'Création...' : 'Créer le Prospect'}
+                  {submitting ? t('prospects.modal.creating', 'Création...') : t('prospects.modal.submit', 'Créer le Prospect')}
                 </button>
               </div>
             </form>

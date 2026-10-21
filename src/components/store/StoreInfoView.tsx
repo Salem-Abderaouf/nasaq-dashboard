@@ -115,7 +115,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               className="flex items-center gap-1.5 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition border border-white/20"
             >
               <Edit3 className="w-4 h-4" />
-              <span>Modifier les Coordonnées</span>
+              <span>{t('store.editBtn', 'Modifier les Coordonnées')}</span>
             </button>
           )}
 
@@ -126,7 +126,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               className="flex items-center gap-1.5 px-3.5 py-2 bg-nasaq-gold hover:bg-nasaq-gold-light text-slate-900 rounded-xl text-xs font-bold transition shadow-xs"
             >
               <DoorOpen className="w-4 h-4" />
-              <span>Lancer Studio Devis</span>
+              <span>{t('store.launchStudio', 'Lancer Studio Devis')}</span>
             </button>
           )}
         </div>
@@ -142,21 +142,21 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               <Hammer className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Atelier & Fabrication</h2>
-              <span className="text-[10.5px] text-slate-500">Unité de découpe CNC & Usinage</span>
+              <h2 className="font-bold text-slate-900 text-sm">{t('store.workshopTitle', 'Atelier & Fabrication')}</h2>
+              <span className="text-[10.5px] text-slate-500">{t('store.workshopSubtitle', 'Unité de découpe CNC & Usinage')}</span>
             </div>
           </div>
 
           <div className="space-y-3 pt-2 border-t border-slate-100 text-xs">
             <div>
-              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">Téléphone Direct Atelier</span>
+              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">{t('store.workshopPhone', 'Téléphone Direct Atelier')}</span>
               <div className="flex items-center justify-between font-mono font-bold text-slate-900 text-sm">
                 <span>{storeInfo.workshopPhone}</span>
                 <div className="flex items-center gap-1">
                   <a
                     href={`tel:${storeInfo.workshopPhone.replace(/\s+/g, '')}`}
                     className="p-1 rounded-md text-nasaq-teal hover:bg-nasaq-teal-subtle transition"
-                    title="Appeler"
+                    title={t('clients.call', 'Appeler')}
                   >
                     <Phone className="w-4 h-4" />
                   </a>
@@ -164,7 +164,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
                     type="button"
                     onClick={() => handleCopy(storeInfo.workshopPhone, 'workshopPhone')}
                     className="p-1 rounded-md text-slate-400 hover:text-slate-600 transition"
-                    title="Copier le numéro"
+                    title={t('clients.copyNumber', 'Copier le numéro')}
                   >
                     {copiedKey === 'workshopPhone' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                   </button>
@@ -173,7 +173,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
             </div>
 
             <div>
-              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">Adresse de l'Usine</span>
+              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">{t('store.workshopAddress', "Adresse de l'Usine")}</span>
               <div className="text-slate-700 flex items-start gap-1.5 leading-snug">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                 <span>{storeInfo.workshopAddress}</span>
@@ -181,7 +181,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
             </div>
 
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-[11px] text-slate-600">
-              <strong>Chef d'Atelier :</strong> M. Rachid Mebarki — Responsable de la mise en fabrication des portes et contrôle qualité.
+              {t('store.workshopManager', "Chef d'Atelier : M. Rachid Mebarki — Responsable de la mise en fabrication des portes et contrôle qualité.")}
             </div>
           </div>
         </div>
@@ -193,21 +193,21 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Showroom & Ventes</h2>
-              <span className="text-[10.5px] text-slate-500">Exposition modèles, devis & échantillons</span>
+              <h2 className="font-bold text-slate-900 text-sm">{t('store.showroomTitle', 'Showroom & Ventes')}</h2>
+              <span className="text-[10.5px] text-slate-500">{t('store.showroomSubtitle', 'Exposition modèles, devis & échantillons')}</span>
             </div>
           </div>
 
           <div className="space-y-3 pt-2 border-t border-slate-100 text-xs">
             <div>
-              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">Ligne Commerciale</span>
+              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">{t('store.salesPhone', 'Ligne Commerciale')}</span>
               <div className="flex items-center justify-between font-mono font-bold text-slate-900 text-sm">
                 <span>{storeInfo.salesPhone}</span>
                 <div className="flex items-center gap-1">
                   <a
                     href={`tel:${storeInfo.salesPhone.replace(/\s+/g, '')}`}
                     className="p-1 rounded-md text-nasaq-teal hover:bg-nasaq-teal-subtle transition"
-                    title="Appeler"
+                    title={t('clients.call', 'Appeler')}
                   >
                     <Phone className="w-4 h-4" />
                   </a>
@@ -215,7 +215,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
                     type="button"
                     onClick={() => handleCopy(storeInfo.salesPhone, 'salesPhone')}
                     className="p-1 rounded-md text-slate-400 hover:text-slate-600 transition"
-                    title="Copier le numéro"
+                    title={t('clients.copyNumber', 'Copier le numéro')}
                   >
                     {copiedKey === 'salesPhone' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                   </button>
@@ -224,7 +224,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
             </div>
 
             <div>
-              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">Email Officiel</span>
+              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">{t('store.officialEmail', 'Email Officiel')}</span>
               <div className="flex items-center justify-between font-mono text-slate-800 text-xs">
                 <span>{storeInfo.email}</span>
                 <button
@@ -238,7 +238,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
             </div>
 
             <div>
-              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">Adresse Showroom</span>
+              <span className="text-slate-400 text-[10.5px] font-semibold block mb-0.5">{t('store.showroomAddress', 'Adresse Showroom')}</span>
               <div className="text-slate-700 flex items-start gap-1.5 leading-snug">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                 <span>{storeInfo.address}</span>
@@ -254,25 +254,25 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Horaires d'Ouverture</h2>
-              <span className="text-[10.5px] text-slate-500">Accueil client et réceptions atelier</span>
+              <h2 className="font-bold text-slate-900 text-sm">{t('store.hoursTitle', "Horaires d'Ouverture")}</h2>
+              <span className="text-[10.5px] text-slate-500">{t('store.hoursSubtitle', 'Accueil client et réceptions atelier')}</span>
             </div>
           </div>
 
           <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
             <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-              <span className="font-semibold text-slate-700">Samedi au Mercredi</span>
+              <span className="font-semibold text-slate-700">{t('store.weekdayHours', 'Samedi au Mercredi')}</span>
               <span className="font-mono font-bold text-emerald-700 text-[11px]">08:30 — 17:30</span>
             </div>
 
             <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-              <span className="font-semibold text-slate-700">Jeudi</span>
+              <span className="font-semibold text-slate-700">{t('store.thursdayHours', 'Jeudi')}</span>
               <span className="font-mono font-bold text-emerald-700 text-[11px]">08:30 — 16:00</span>
             </div>
 
             <div className="flex items-center justify-between p-2 rounded-lg bg-rose-50/60 border border-rose-200/50">
-              <span className="font-semibold text-rose-800">Vendredi</span>
-              <span className="font-bold text-rose-600 text-[11px]">Fermé (Repos)</span>
+              <span className="font-semibold text-rose-800">{t('store.hoursFri', 'Vendredi')}</span>
+              <span className="font-bold text-rose-600 text-[11px]">{t('store.fridayClosed', 'Fermé (Repos)')}</span>
             </div>
           </div>
         </div>
@@ -281,14 +281,14 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
           <div className="flex items-center gap-2 text-nasaq-teal font-bold text-sm">
             <ShieldCheck className="w-4 h-4 text-nasaq-gold" />
-            <span>Spécifications & Garantie NASAQ</span>
+            <span>{t('store.guaranteeTitle', 'Spécifications & Garantie NASAQ')}</span>
           </div>
           <ul className="space-y-1.5 text-xs text-slate-600 list-disc list-inside">
-            <li>Composite Bois-Polymère (WPC) 100% étanche à l'eau</li>
-            <li>Inattaquable par les termites et l'humidité</li>
-            <li>Isolation acoustique renforcée avec joint d'étanchéité</li>
-            <li>Épaisseur standard usine : <strong>4.0 cm</strong></li>
-            <li>Hauteur standard : <strong>210 cm</strong> (sur-mesure disponible)</li>
+            <li>{t('store.guarantee1', 'Composite Bois-Polymère (WPC) 100% étanche à l\'eau')}</li>
+            <li>{t('store.guarantee2', 'Inattaquable par les termites et l\'humidité')}</li>
+            <li>{t('store.guarantee3', 'Isolation acoustique renforcée avec joint d\'étanchéité')}</li>
+            <li>{t('store.guarantee4', 'Épaisseur standard usine : 4.0 cm')}</li>
+            <li>{t('store.guarantee5', 'Hauteur standard : 210 cm (sur-mesure disponible)')}</li>
           </ul>
         </div>
 
@@ -296,7 +296,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
           <div className="flex items-center gap-2 text-nasaq-teal font-bold text-sm">
             <Truck className="w-4 h-4 text-nasaq-teal" />
-            <span>Chantiers & Logistique</span>
+            <span>{t('store.logisticsTitle', 'Chantiers & Logistique')}</span>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
             {storeInfo.notes}
@@ -315,7 +315,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-nasaq-teal font-bold text-sm">
               <CreditCard className="w-4 h-4 text-nasaq-teal" />
-              <span>Modalités de Paiement</span>
+              <span>{t('store.paymentTerms', 'Modalités de Paiement')}</span>
             </div>
             <span className="text-[10px] font-mono font-bold bg-nasaq-gold/20 text-nasaq-gold-dark px-2 py-0.5 rounded">
               DZD (DA)
@@ -323,9 +323,9 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
           </div>
 
           <div className="space-y-1.5 text-xs text-slate-600">
-            <p>Règlements acceptés : Espèces avec reçu d'atelier officiel, virement bancaire ou chèque certifié.</p>
+            <p>{t('store.paymentMethods', "Règlements acceptés : Espèces avec reçu d'atelier officiel, virement bancaire ou chèque certifié.")}</p>
             <div className="pt-2">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Compte Bancaire / RIB</span>
+              <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">{t('store.bankAccount', 'Compte Bancaire / RIB')}</span>
               <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 font-mono text-xs text-slate-900 border border-slate-200">
                 <span className="truncate">{storeInfo.ribAccount}</span>
                 <button
@@ -349,7 +349,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-nasaq-teal text-white">
               <h3 className="font-bold text-sm flex items-center gap-2">
                 <Edit3 className="w-4 h-4" />
-                <span>Modifier les Coordonnées de la Boutique</span>
+                <span>{t('store.modalTitle', 'Modifier les Coordonnées de la Boutique')}</span>
               </h3>
               <button type="button" onClick={() => setIsEditing(false)} className="text-white/80 hover:text-white">
                 <X className="w-4 h-4" />
@@ -358,7 +358,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
 
             <form onSubmit={handleSave} className="p-5 space-y-3 text-xs max-h-[80vh] overflow-y-auto">
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone Atelier Principal</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.workshopPhone', 'Téléphone Atelier Principal')}</label>
                 <input
                   type="text"
                   required
@@ -369,7 +369,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Téléphone Service Commercial</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.salesPhone', 'Téléphone Service Commercial')}</label>
                 <input
                   type="text"
                   required
@@ -380,7 +380,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Email Officiel</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.officialEmail', 'Email Officiel')}</label>
                 <input
                   type="email"
                   required
@@ -391,7 +391,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse de l'Usine / Atelier</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.workshopAddress', "Adresse de l'Usine / Atelier")}</label>
                 <input
                   type="text"
                   value={formData.workshopAddress}
@@ -401,7 +401,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Adresse du Showroom</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.showroomAddress', 'Adresse du Showroom')}</label>
                 <input
                   type="text"
                   value={formData.address}
@@ -411,7 +411,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">RIB Bancaire</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('store.bankAccount', 'RIB Bancaire')}</label>
                 <input
                   type="text"
                   value={formData.ribAccount}
@@ -421,7 +421,7 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-600 mb-1">Notes / Engagements</label>
+                <label className="block font-semibold text-slate-600 mb-1">{t('clients.modal.notes', 'Notes / Engagements')}</label>
                 <textarea
                   rows={2}
                   value={formData.notes}
@@ -436,14 +436,14 @@ export const StoreInfoView: React.FC<StoreInfoViewProps> = ({ onNavigate }) => {
                   onClick={() => setIsEditing(false)}
                   className="px-3.5 py-1.5 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
-                  Annuler
+                  {t('clients.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-1.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Enregistrer</span>
+                  <span>{t('common.save', 'Enregistrer')}</span>
                 </button>
               </div>
             </form>
