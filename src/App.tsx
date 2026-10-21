@@ -285,7 +285,6 @@ const DashboardLayout: React.FC = () => {
           order={paymentModalOrder}
           onClose={() => setPaymentModalOrder(null)}
           onSuccess={() => {
-            alert('Paiement enregistré avec succès dans Supabase !');
             setSelectedOrder(null);
           }}
         />
