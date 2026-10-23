@@ -35,7 +35,7 @@ export const DoorElevationSVG: React.FC<DoorElevationSVGProps> = ({
 
   const activeColor = COLOR_CATALOG.find(c => c.id === door.colorId) || COLOR_CATALOG[2];
   const doorFill = activeColor.hex;
-  const isDark = activeColor.id !== 'white' && activeColor.id !== 'irab';
+  const isDark = activeColor.textColor === '#ffffff';
   const grainStroke = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)';
   const grainPatternId = `grain-${door.id}-${door.colorId}`;
 
