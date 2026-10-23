@@ -40,7 +40,68 @@ export const RecentOrdersTable: React.FC<RecentOrdersTableProps> = ({
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Mobile Card List (< md screens) */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {orders.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 italic text-xs">
+            {t('dashboard.noRecentOrders', 'Aucune commande enregistrée.')}
+          </div>
+        ) : (
+          orders.slice(0, 5).map(order => {
+            const statusMeta = getOrderStatusMeta(order.status, t);
+            const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount, t);
+
+            return (
+              <div key={order.id} className="py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-nasaq-teal text-xs">
+                    {order.order_number || 'N/A'}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusMeta.bg} ${statusMeta.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`}></span>
+                    {statusMeta.label}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <div className="font-semibold text-slate-800">
+                    {order.clients?.name || 'Client sans nom'}
+                  </div>
+                  <div className="font-mono font-bold text-slate-900">
+                    {formatMoney(order.total_amount)}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${paymentMeta.bg} ${paymentMeta.text}`}>
+                    {paymentMeta.label}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onSelectOrder(order)}
+                      className="px-2 py-1 text-nasaq-teal bg-nasaq-teal-subtle text-[11px] font-bold rounded-lg flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{t('orders.viewDetails', 'Détails')}</span>
+                    </button>
+                    {onRecordPayment && (
+                      <button
+                        type="button"
+                        onClick={() => onRecordPayment(order)}
+                        className="p-1 text-emerald-600 bg-emerald-50 rounded-lg"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Table View (>= md screens) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">

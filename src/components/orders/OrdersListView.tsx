@@ -16,7 +16,8 @@ import {
   Trash2,
   AlertTriangle,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -247,9 +248,139 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
         </div>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Table & Mobile Cards */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Cards List (< md screens) */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {loading ? (
+            <div className="py-12 text-center text-slate-400">
+              {t('orders.loading', 'Chargement des commandes depuis Supabase...')}
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 italic">
+              {t('orders.noOrdersFound', 'Aucune commande trouvée correspondant aux critères.')}
+            </div>
+          ) : (
+            filteredOrders.map(order => {
+              const statusMeta = getOrderStatusMeta(order.status, t);
+              const paymentMeta = getPaymentBadge(order.paid_amount, order.total_amount, t);
+              const remaining = Math.max(0, order.total_amount - order.paid_amount);
+
+              return (
+                <div key={order.id} className="p-4 space-y-3 hover:bg-slate-50/60 transition">
+                  {/* Top Bar: Order Number + Status + Date */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-nasaq-teal text-sm">
+                        {order.order_number}
+                      </span>
+                      {order.is_promo_enabled && (
+                        <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">
+                          Promo
+                        </span>
+                      )}
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusMeta.bg} ${statusMeta.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusMeta.dot}`} />
+                      {t('status.' + order.status, statusMeta.label)}
+                    </span>
+                  </div>
+
+                  {/* Client Info */}
+                  <div className="flex items-center justify-between text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div>
+                      <div className="font-bold text-slate-900">{order.clients?.name || 'Client sans nom'}</div>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">{formatDate(order.created_at)}</div>
+                    </div>
+                    {order.clients?.phone && (
+                      <a
+                        href={`tel:${order.clients.phone}`}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-nasaq-teal/10 hover:bg-nasaq-teal/20 text-nasaq-teal font-mono font-bold text-[11px] rounded-lg transition"
+                        title={t('common.call', 'Appeler')}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>{order.clients.phone}</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Financials (if permitted) */}
+                  {canViewFinancials && (
+                    <div className="flex items-center justify-between pt-1">
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase font-semibold">Total</div>
+                        <div className="font-mono text-sm font-extrabold text-slate-900">
+                          {formatMoney(order.total_amount)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span 
+                          onClick={() => setSelectedOrderForPayments(order)}
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${paymentMeta.bg} ${paymentMeta.text}`}
+                        >
+                          {paymentMeta.label}
+                        </span>
+                        {remaining > 0 ? (
+                          <div className="font-mono text-[11px] text-rose-600 font-bold mt-0.5">
+                            Reste: {formatMoney(remaining)}
+                          </div>
+                        ) : (
+                          <div className="font-mono text-[10px] text-emerald-600 font-semibold mt-0.5">
+                            Solde réglé
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+                    {canCreateOrders && onEditOrderInStudio && (
+                      <button
+                        type="button"
+                        onClick={() => onEditOrderInStudio(order)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-slate-600 bg-slate-100 hover:bg-amber-50 hover:text-amber-700 rounded-lg text-xs font-semibold transition"
+                      >
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span>Studio</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onSelectOrder(order)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-nasaq-teal bg-nasaq-teal-subtle hover:bg-nasaq-teal/20 rounded-lg text-xs font-bold transition"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Détails</span>
+                    </button>
+                    {canRecordPayments && remaining > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => onRecordPayment(order)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg text-xs font-bold transition"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>Encaisser</span>
+                      </button>
+                    )}
+                    {canDeleteOrders && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderToDelete(order)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop Table View (>= md screens) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className={`w-full ${isRtl ? 'text-right' : 'text-left'} text-xs border-collapse`}>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10.5px] tracking-wider">

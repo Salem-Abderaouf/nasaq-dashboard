@@ -9,7 +9,7 @@ import { downloadDossierZIP } from '../../utils/exportUtils';
 import { supabase } from '../../api/supabase';
 import { Client, Order } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Sliders, Eye } from 'lucide-react';
 
 const STORAGE_KEY_DOORS = 'nasaq_dashboard_doors_state';
 const STORAGE_KEY_INFO = 'nasaq_dashboard_info_state';
@@ -487,8 +487,41 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
     );
   };
 
+  const [mobilePanel, setMobilePanel] = useState<'config' | 'preview'>('config');
+
   return (
     <div className="flex flex-col lg:flex-row h-full overflow-hidden relative">
+      {/* Mobile Top View Switcher (Visible only on < lg screens) */}
+      <div className="lg:hidden bg-nasaq-teal-dark border-b border-slate-700/80 p-2 px-3 flex items-center justify-between gap-2 shrink-0 z-30 shadow-md">
+        <div className="grid grid-cols-2 gap-2 w-full max-w-md mx-auto">
+          <button
+            type="button"
+            onClick={() => setMobilePanel('config')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition ${
+              mobilePanel === 'config'
+                ? 'bg-nasaq-gold text-slate-900 shadow-sm'
+                : 'bg-white/10 text-slate-200 hover:bg-white/20'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Options & Portes ({doors.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobilePanel('preview')}
+            className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition ${
+              mobilePanel === 'preview'
+                ? 'bg-nasaq-gold text-slate-900 shadow-sm'
+                : 'bg-white/10 text-slate-200 hover:bg-white/20'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Aperçu Devis & 2D</span>
+          </button>
+        </div>
+      </div>
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-bold text-white transition-all transform animate-bounce ${
@@ -500,25 +533,27 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
       )}
 
       {/* LEFT SIDEBAR: Full height independent scroll */}
-      <ConfigSidebar
-        doors={doors}
-        info={info}
-        clients={clients}
-        orders={dbOrders}
-        onSelectOrderToEdit={loadOrderForEditing}
-        onRefreshClients={loadClients}
-        onUpdateInfo={updateInfo}
-        onUpdateDoor={updateDoor}
-        onAddDoor={addDoor}
-        onDeleteDoor={deleteDoor}
-        onResetEmpty={resetEmpty}
-        onSaveToSupabase={handleSaveToSupabase}
-        onDownloadZip={handleDownloadZip}
-        isSaving={isSaving}
-      />
+      <div className={`${mobilePanel === 'config' ? 'block' : 'hidden'} lg:block h-full shrink-0`}>
+        <ConfigSidebar
+          doors={doors}
+          info={info}
+          clients={clients}
+          orders={dbOrders}
+          onSelectOrderToEdit={loadOrderForEditing}
+          onRefreshClients={loadClients}
+          onUpdateInfo={updateInfo}
+          onUpdateDoor={updateDoor}
+          onAddDoor={addDoor}
+          onDeleteDoor={deleteDoor}
+          onResetEmpty={resetEmpty}
+          onSaveToSupabase={handleSaveToSupabase}
+          onDownloadZip={handleDownloadZip}
+          isSaving={isSaving}
+        />
+      </div>
 
       {/* RIGHT MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col h-full overflow-y-auto bg-slate-100">
+      <div className={`${mobilePanel === 'preview' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col h-full overflow-y-auto bg-slate-100`}>
         
         {/* Active Edit Mode Alert Banner */}
         {info.editingOrderId && (

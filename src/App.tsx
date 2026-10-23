@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar, NavView } from './components/layout/Sidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { Header } from './components/layout/Header';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { ConfiguratorView } from './components/configurator/ConfiguratorView';
@@ -181,8 +182,8 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
-      {/* SIDEBAR NAVIGATION */}
+    <div className="flex h-[100dvh] w-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
+      {/* SIDEBAR NAVIGATION (Desktop) */}
       <Sidebar
         currentView={currentView}
         onNavigate={setCurrentView}
@@ -192,8 +193,16 @@ const DashboardLayout: React.FC = () => {
         isSeeding={isSeeding}
       />
 
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <MobileBottomNav
+        currentView={currentView}
+        onNavigate={setCurrentView}
+        onSeedData={handleSeedData}
+        isSeeding={isSeeding}
+      />
+
       {/* MAIN CONTAINER */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-[100dvh] overflow-hidden">
         {/* HEADER */}
         <Header
           currentView={currentView}
@@ -201,7 +210,7 @@ const DashboardLayout: React.FC = () => {
         />
 
         {/* WORKSPACE VIEW CONTAINER */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
           {currentView === 'dashboard' && hasPermission('canViewDashboard') && (
             <DashboardView
               key={ordersRefreshKey}

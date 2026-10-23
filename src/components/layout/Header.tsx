@@ -28,14 +28,14 @@ export const Header: React.FC<HeaderProps> = ({
     : t('header.role.worker', 'Artisan Atelier');
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between no-print z-10 shrink-0 shadow-2xs">
-      <div className="flex items-center gap-3 overflow-hidden">
-        <img src="/nasaq-logo-transparent.png" alt="NASAQ" className="h-8 w-auto object-contain hidden sm:block shrink-0" />
+    <header className="h-14 md:h-16 bg-white border-b border-slate-200 px-3 md:px-6 flex items-center justify-between no-print z-10 shrink-0 shadow-2xs">
+      <div className="flex items-center gap-2.5 overflow-hidden">
+        <img src="/nasaq-logo-transparent.png" alt="NASAQ" className="h-7 md:h-8 w-auto object-contain shrink-0" />
         <div className="truncate">
-          <h1 className="text-sm md:text-base font-bold text-slate-900 flex items-center gap-2 truncate">
+          <h1 className="text-xs md:text-base font-bold text-slate-900 flex items-center gap-2 truncate">
             {title}
           </h1>
-          <p className="text-[11px] text-slate-500 hidden sm:block truncate">
+          <p className="text-[10px] md:text-[11px] text-slate-500 hidden sm:block truncate">
             {subtitle}
           </p>
         </div>
