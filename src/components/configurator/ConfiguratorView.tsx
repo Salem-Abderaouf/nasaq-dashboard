@@ -490,9 +490,9 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
   const [mobilePanel, setMobilePanel] = useState<'config' | 'preview'>('config');
 
   return (
-    <div className="flex flex-col lg:flex-row h-full overflow-hidden relative">
+    <div className="flex flex-col lg:flex-row h-full overflow-hidden relative print:!block print:!h-auto print:!overflow-visible print:!bg-white">
       {/* Mobile Top View Switcher (Visible only on < lg screens) */}
-      <div className="lg:hidden bg-nasaq-teal-dark border-b border-slate-700/80 p-2 px-3 flex items-center justify-between gap-2 shrink-0 z-30 shadow-md">
+      <div className="lg:hidden bg-nasaq-teal-dark border-b border-slate-700/80 p-2 px-3 flex items-center justify-between gap-2 shrink-0 z-30 shadow-md no-print">
         <div className="grid grid-cols-2 gap-2 w-full max-w-md mx-auto">
           <button
             type="button"
@@ -524,7 +524,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-bold text-white transition-all transform animate-bounce ${
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-xs font-bold text-white transition-all transform animate-bounce no-print ${
           toastMessage.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'
         }`}>
           {toastMessage.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -533,7 +533,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
       )}
 
       {/* LEFT SIDEBAR: Full height independent scroll */}
-      <div className={`${mobilePanel === 'config' ? 'block' : 'hidden'} lg:block h-full shrink-0`}>
+      <div className={`${mobilePanel === 'config' ? 'block' : 'hidden'} lg:block h-full shrink-0 no-print`}>
         <ConfigSidebar
           doors={doors}
           info={info}
@@ -553,7 +553,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
       </div>
 
       {/* RIGHT MAIN WORKSPACE */}
-      <div className={`${mobilePanel === 'preview' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col h-full overflow-y-auto bg-slate-100`}>
+      <div className={`${mobilePanel === 'preview' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col h-full overflow-y-auto bg-slate-100 print:!flex print:!h-auto print:!overflow-visible print:!bg-white print:!p-0 print:!m-0`}>
         
         {/* Active Edit Mode Alert Banner */}
         {info.editingOrderId && (
@@ -632,7 +632,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         </nav>
 
         {/* Tab Content Panels */}
-        <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-16">
+        <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-16 print:!max-w-full print:!p-0 print:!m-0 print:!pb-0">
           {activeTab === 'drawings' && (
             <TechnicalDrawingsSheet 
               doors={doors} 

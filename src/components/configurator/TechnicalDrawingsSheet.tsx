@@ -40,9 +40,10 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
             type="button"
             onClick={() => window.print()}
             className="flex items-center gap-1.5 bg-white hover:bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-xs"
+            title="Imprimer ou Enregistrer en PDF (Ctrl+P / Cmd+P)"
           >
             <Printer className="w-3.5 h-3.5" />
-            {t('common.print', 'Imprimer')}
+            {t('common.print', 'Imprimer')} (PDF)
           </button>
         </div>
       </div>

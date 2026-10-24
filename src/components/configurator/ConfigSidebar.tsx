@@ -239,7 +239,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-[380px] xl:w-[420px] bg-white border-r border-slate-200 flex flex-col h-full z-20 shadow-lg shrink-0">
+    <aside className="w-full lg:w-[380px] xl:w-[420px] bg-white border-r border-slate-200 flex flex-col h-full z-20 shadow-lg shrink-0 no-print">
       {/* Brand Header */}
       <div className="bg-gradient-to-r from-nasaq-teal-dark to-nasaq-teal p-3.5 px-4 flex items-center justify-between border-b-2 border-nasaq-gold text-white">
         <div className="flex items-center gap-2.5">

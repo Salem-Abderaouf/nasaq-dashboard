@@ -17,7 +17,7 @@ export const InvoiceAtelierSheet: React.FC<InvoiceAtelierSheetProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-700 text-white p-3.5 px-6 rounded-xl flex items-center justify-between text-xs shadow-xs">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-700 text-white p-3.5 px-6 rounded-xl flex items-center justify-between text-xs shadow-xs no-print">
         <div className="font-bold flex items-center gap-2">
           <span>🔨</span>
           <span>FICHE DE FABRICATION & DÉBIT ATELIER — Ordre de travail pour menuisiers & poseurs</span>
@@ -42,9 +42,10 @@ export const InvoiceAtelierSheet: React.FC<InvoiceAtelierSheetProps> = ({
             type="button"
             onClick={() => window.print()}
             className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold transition"
+            title="Imprimer ou Enregistrer en PDF (Ctrl+P / Cmd+P)"
           >
             <Printer className="w-3.5 h-3.5" />
-            Imprimer la Fiche Atelier
+            Imprimer la Fiche Atelier (PDF)
           </button>
         </div>
       </div>

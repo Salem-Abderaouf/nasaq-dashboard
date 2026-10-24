@@ -182,7 +182,7 @@ const DashboardLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] w-screen overflow-hidden bg-slate-100 text-slate-800 font-sans">
+    <div className="flex h-[100dvh] w-screen overflow-hidden bg-slate-100 text-slate-800 font-sans print:!h-auto print:!overflow-visible print:!bg-white print:!w-full">
       {/* SIDEBAR NAVIGATION (Desktop) */}
       <Sidebar
         currentView={currentView}
@@ -202,7 +202,7 @@ const DashboardLayout: React.FC = () => {
       />
 
       {/* MAIN CONTAINER */}
-      <div className="flex-1 flex flex-col h-[100dvh] overflow-hidden">
+      <div className="flex-1 flex flex-col h-[100dvh] overflow-hidden print:!h-auto print:!overflow-visible">
         {/* HEADER */}
         <Header
           currentView={currentView}
@@ -210,7 +210,7 @@ const DashboardLayout: React.FC = () => {
         />
 
         {/* WORKSPACE VIEW CONTAINER */}
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0 print:!h-auto print:!overflow-visible print:!p-0 print:!pb-0">
           {currentView === 'dashboard' && hasPermission('canViewDashboard') && (
             <DashboardView
               key={ordersRefreshKey}

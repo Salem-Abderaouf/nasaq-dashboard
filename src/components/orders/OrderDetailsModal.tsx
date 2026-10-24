@@ -145,8 +145,8 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs print:!static print:!p-0 print:!bg-white">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 print:!max-h-none print:!border-none print:!shadow-none print:!w-full print:!overflow-visible">
         
         {/* Header */}
         <div className="bg-nasaq-teal text-white p-4 px-6 flex items-center justify-between shrink-0">
@@ -167,7 +167,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 no-print">
             {canCreateOrders && onEditInStudio && (
               <button
                 type="button"
@@ -203,7 +203,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         </div>
 
         {/* Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs print:!overflow-visible print:!p-0">
           
           {/* Top Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

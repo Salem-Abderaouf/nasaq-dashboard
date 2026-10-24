@@ -42,9 +42,10 @@ export const InvoiceStandardSheet: React.FC<InvoiceStandardSheetProps> = ({
             type="button"
             onClick={() => window.print()}
             className="flex items-center gap-1.5 bg-white hover:bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal px-3 py-1.5 rounded-lg text-xs font-bold transition"
+            title="Imprimer ou Enregistrer en PDF (Ctrl+P / Cmd+P)"
           >
             <Printer className="w-3.5 h-3.5" />
-            Imprimer la Facture
+            Imprimer la Facture (PDF)
           </button>
         </div>
       </div>

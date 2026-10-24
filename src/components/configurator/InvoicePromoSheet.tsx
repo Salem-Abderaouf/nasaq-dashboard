@@ -27,7 +27,7 @@ export const InvoicePromoSheet: React.FC<InvoicePromoSheetProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Banner & Action */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white p-3.5 px-6 rounded-xl flex items-center justify-between text-xs shadow-xs">
+      <div className="bg-gradient-to-r from-emerald-800 to-emerald-600 text-white p-3.5 px-6 rounded-xl flex items-center justify-between text-xs shadow-xs no-print">
         <div className="font-bold flex items-center gap-2">
           <span>🎁</span>
           <span>OFFRE PROMOTIONNELLE SPÉCIALE — Remise commerciale appliquée sur votre commande</span>
@@ -52,9 +52,10 @@ export const InvoicePromoSheet: React.FC<InvoicePromoSheetProps> = ({
             type="button"
             onClick={() => window.print()}
             className="flex items-center gap-1.5 bg-white hover:bg-nasaq-teal-subtle text-nasaq-teal border border-nasaq-teal px-3 py-1.5 rounded-lg text-xs font-bold transition"
+            title="Imprimer ou Enregistrer en PDF (Ctrl+P / Cmd+P)"
           >
             <Printer className="w-3.5 h-3.5" />
-            Imprimer le Devis Promo
+            Imprimer le Devis Promo (PDF)
           </button>
         </div>
       </div>
