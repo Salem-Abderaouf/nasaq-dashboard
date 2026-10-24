@@ -238,6 +238,10 @@ const DashboardLayout: React.FC = () => {
               key={ordersRefreshKey}
               onOpenConfigurator={() => {
                 setOrderToEdit(null);
+                try {
+                  localStorage.removeItem('nasaq_dashboard_info_state');
+                  localStorage.removeItem('nasaq_dashboard_doors_state');
+                } catch {}
                 setCurrentView('configurator');
               }}
               onEditOrderInStudio={(order) => {

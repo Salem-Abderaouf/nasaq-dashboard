@@ -265,6 +265,33 @@ export const DoorElevationSVG: React.FC<DoorElevationSVGProps> = ({
         );
       })}
 
+      {/* Technical Door ID Plaque on Door (e.g. P1-0101) */}
+      {door.id && (
+        <g className="select-none pointer-events-none">
+          <rect 
+            x={(isDouble ? splitX + rightLeafW / 2 : x0 + doorW / 2) - Math.max(24, (door.id.length * 3.6) + 4)} 
+            y={doorY0 + 9} 
+            width={Math.max(48, (door.id.length * 7.2) + 8)} 
+            height="14" 
+            rx="3" 
+            fill="#1c4b46" 
+            stroke="#ffffff"
+            strokeWidth="0.9"
+          />
+          <text 
+            x={isDouble ? splitX + rightLeafW / 2 : x0 + doorW / 2} 
+            y={doorY0 + 19.5} 
+            fontSize="8" 
+            fill="#ffffff" 
+            fontFamily="'JetBrains Mono', monospace" 
+            fontWeight="700" 
+            textAnchor="middle"
+          >
+            {door.id}
+          </text>
+        </g>
+      )}
+
       {/* Dimension Lines (Height) */}
       {showDimensions && (
         <g>

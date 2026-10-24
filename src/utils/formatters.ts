@@ -93,3 +93,38 @@ export function getPaymentBadge(
   }
   return { label: tr('status.paid_overpaid', 'Trop-Perçu'), bg: 'bg-blue-50', text: 'text-blue-700' };
 }
+
+/**
+ * Extract clean numeric/alphanumeric code from order number or reference.
+ * E.g. "ORD-2026-0101" -> "0101"
+ * E.g. "ORD-2026-0104" -> "0104"
+ * E.g. "0101" -> "0101"
+ */
+export function extractOrderCode(orderRefOrNumber?: string | null): string {
+  if (!orderRefOrNumber) return '0101';
+  const parts = orderRefOrNumber.trim().split('-');
+  const last = parts[parts.length - 1];
+  if (last && /^\d+$/.test(last)) {
+    return last;
+  }
+  const clean = orderRefOrNumber.replace(/[^a-zA-Z0-9]/g, '');
+  return clean.slice(-4) || '0101';
+}
+
+/**
+ * Format a door identifier using door index and order reference.
+ * E.g. (1, "ORD-2026-0101") -> "P1-0101"
+ * E.g. ("P2", "ORD-2026-0101") -> "P2-0101"
+ * E.g. ("P3-0101", "ORD-2026-0102") -> "P3-0102"
+ */
+export function formatDoorId(indexOrCurrentId: number | string, orderRefOrNumber?: string | null): string {
+  const code = extractOrderCode(orderRefOrNumber);
+  let prefix = 'P1';
+  if (typeof indexOrCurrentId === 'number') {
+    prefix = `P${indexOrCurrentId}`;
+  } else {
+    const match = String(indexOrCurrentId).match(/^(P\d+)/i);
+    prefix = match ? match[1].toUpperCase() : (String(indexOrCurrentId).startsWith('P') ? String(indexOrCurrentId).split('-')[0] : `P${indexOrCurrentId}`);
+  }
+  return `${prefix}-${code}`;
+}

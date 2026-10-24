@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderItem, OrderPayment, OrderStatus } from '../../types/database';
 import { supabase } from '../../api/supabase';
-import { formatMoney, formatDate, getOrderStatusMeta, getPaymentBadge } from '../../utils/formatters';
+import { formatMoney, formatDate, getOrderStatusMeta, getPaymentBadge, formatDoorId } from '../../utils/formatters';
 import { DoorElevationSVG } from '../2d/DoorElevationSVG';
 import { DoorConfigItem } from '../../types/configurator';
 import { X, Printer, CheckCircle, Ban, Clock, ShoppingBag, Sliders, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
@@ -289,7 +289,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 {items.map((it, idx) => {
                   const config = (it.configuration || {}) as Partial<DoorConfigItem>;
                   const doorItemConfig: DoorConfigItem = {
-                    id: `P${idx + 1}`,
+                    id: config.id || formatDoorId(idx + 1, order.order_number),
                     heightCm: it.height || 210,
                     widthCm: it.width || 85,
                     designation: it.door_products?.name || it.door_products?.reference || "Porte WPC",
@@ -319,7 +319,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       <div className="flex-1 flex flex-col justify-between overflow-hidden">
                         <div>
                           <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-xs text-nasaq-teal">P{idx + 1}</span>
+                            <span className="font-mono font-bold text-xs text-nasaq-teal">
+                              {doorItemConfig.id || it.configuration?.id || `P${idx + 1}`}
+                            </span>
                             <span className="font-mono text-xs font-bold text-slate-900">{formatMoney(it.unit_price)}</span>
                           </div>
                           <div className="font-bold text-slate-800 text-xs truncate mt-0.5">
