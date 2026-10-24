@@ -109,21 +109,6 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
               const activePat = PATTERN_CATALOG.find(p => p.id === (door.patternId || 'none')) || PATTERN_CATALOG[0];
               const totalHeight = hasRev ? (door.heightCm + revH) : door.heightCm;
 
-              let specText = 'Finition pleine';
-              if (door.patternId && door.patternId !== 'none') {
-                specText = `Motif : ${activePat.name}`;
-              }
-              if (door.glassPanes && door.glassPanes.length > 0) {
-                specText += ` • ${door.glassPanes.length} vitrage(s)`;
-              }
-              if (isDouble) {
-                specText += ' • 2 vantaux';
-              }
-              if (hasRev && revH > 0) {
-                specText += ` • Imposte +${revH} cm`;
-              }
-              specText += ` • Quincaillerie : ${door.hardwareColor === 'chrome' ? 'Chrome' : 'Noir Mat'}`;
-
               return (
                 <div 
                   key={door.id}
@@ -153,11 +138,6 @@ export const TechnicalDrawingsSheet: React.FC<TechnicalDrawingsSheetProps> = ({
                       style={{ backgroundColor: activeColor.hex }}
                     />
                     <span>{activeColor.name} {activePat.id !== 'none' ? `• ${activePat.name}` : ''}</span>
-                  </div>
-
-                  {/* Detail Tag */}
-                  <div className="w-full mt-1.5 p-1 bg-nasaq-gold-subtle border border-nasaq-gold/25 rounded text-[10.5px] text-nasaq-gold-dark text-center leading-tight">
-                    {specText}
                   </div>
                 </div>
               );
