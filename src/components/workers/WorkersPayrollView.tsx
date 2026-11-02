@@ -18,7 +18,9 @@ import {
   Key,
   Lock,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { WorkerCredentialsModal } from './WorkerCredentialsModal';
 import { AuthService } from '../../services/authService';
@@ -31,6 +33,16 @@ export const WorkersPayrollView: React.FC = () => {
   const [isAddWorkerModalOpen, setIsAddWorkerModalOpen] = useState(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+
+  // Worker deletion state & notifications
+  const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
+  const [deletingWorker, setDeletingWorker] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   // Financial adjustments for selected worker
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
@@ -257,8 +269,99 @@ export const WorkersPayrollView: React.FC = () => {
     }
   };
 
+  const handleDeleteWorker = async () => {
+    if (!workerToDelete) return;
+    setDeletingWorker(true);
+    try {
+      // 1. Delete associated salary advances
+      const { error: advErr } = await supabase
+        .from('salary_advances')
+        .delete()
+        .eq('worker_id', workerToDelete.id);
+      if (advErr) console.warn('Error deleting advances:', advErr);
+
+      // 2. Delete associated salary bonuses
+      const { error: bonErr } = await supabase
+        .from('salary_bonuses')
+        .delete()
+        .eq('worker_id', workerToDelete.id);
+      if (bonErr) console.warn('Error deleting bonuses:', bonErr);
+
+      // 3. Delete associated salary deductions
+      const { error: dedErr } = await supabase
+        .from('salary_deductions')
+        .delete()
+        .eq('worker_id', workerToDelete.id);
+      if (dedErr) console.warn('Error deleting deductions:', dedErr);
+
+      // 4. Delete associated salary payments
+      const { error: payErr } = await supabase
+        .from('salary_payments')
+        .delete()
+        .eq('worker_id', workerToDelete.id);
+      if (payErr) console.warn('Error deleting payments:', payErr);
+
+      // 5. Unlink worker from any orders
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .update({ worker_id: null })
+        .eq('worker_id', workerToDelete.id);
+      if (ordErr) console.warn('Error unlinking orders:', ordErr);
+
+      // 6. Delete the worker record
+      const { error: workerErr } = await supabase
+        .from('workers')
+        .delete()
+        .eq('id', workerToDelete.id);
+      if (workerErr) throw workerErr;
+
+      // 7. Remove credentials from local storage
+      AuthService.deleteWorkerCredentials(workerToDelete);
+
+      // 8. Update UI state
+      const deletedId = workerToDelete.id;
+      const deletedName = workerToDelete.name;
+      setWorkers(prev => {
+        const remaining = prev.filter(w => w.id !== deletedId);
+        if (selectedWorker?.id === deletedId) {
+          setSelectedWorker(remaining.length > 0 ? remaining[0] : null);
+        }
+        return remaining;
+      });
+
+      showToast(
+        t('workers.deleteSuccess', `Employé "${deletedName}" supprimé avec succès.`).replace('{name}', deletedName),
+        'success'
+      );
+      setWorkerToDelete(null);
+    } catch (err: any) {
+      console.error('Error deleting worker:', err);
+      showToast(err.message || t('workers.deleteError', 'Erreur lors de la suppression de l\'employé.'), 'error');
+    } finally {
+      setDeletingWorker(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div className={`p-4 rounded-xl border flex items-center justify-between gap-3 text-xs font-semibold animate-in slide-in-from-top-2 duration-150 ${
+          toast.type === 'success' 
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-rose-50 border-rose-200 text-rose-800'
+        }`}>
+          <span>{toast.message}</span>
+          <button 
+            type="button" 
+            onClick={() => setToast(null)}
+            className="text-slate-400 hover:text-slate-600 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -320,15 +423,28 @@ export const WorkersPayrollView: React.FC = () => {
                   <div
                     key={w.id}
                     onClick={() => setSelectedWorker(w)}
-                    className={`p-3 rounded-xl border text-xs cursor-pointer transition ${
+                    className={`p-3 rounded-xl border text-xs cursor-pointer transition relative group ${
                       isSelected
                         ? 'border-nasaq-teal bg-nasaq-teal-subtle/80 shadow-xs'
                         : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-xs">{w.name}</span>
-                      <span className="font-mono font-bold text-nasaq-teal text-xs">{formatMoney(w.base_salary)}</span>
+                      <span className="font-bold text-slate-900 text-xs truncate mr-2">{w.name}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-mono font-bold text-nasaq-teal text-xs">{formatMoney(w.base_salary)}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWorkerToDelete(w);
+                          }}
+                          className="opacity-70 group-hover:opacity-100 p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                          title={t('workers.deleteWorker', "Supprimer l'employé")}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
                       <span className="truncate max-w-[130px]">{w.position}</span>
@@ -383,8 +499,8 @@ export const WorkersPayrollView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quick Adjustment Buttons */}
-                <div className="flex items-center gap-2">
+                {/* Quick Adjustment & Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setAdjustmentModalType('advance')}
@@ -408,6 +524,15 @@ export const WorkersPayrollView: React.FC = () => {
                   >
                     <TrendingDown className="w-3.5 h-3.5" />
                     {t('workers.addDeduction', '- Retenue')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkerToDelete(selectedWorker)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-bold transition"
+                    title={t('workers.deleteTooltip', "Supprimer cet artisan de l'équipe")}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{t('common.delete', 'Supprimer')}</span>
                   </button>
                 </div>
               </div>
@@ -826,6 +951,91 @@ export const WorkersPayrollView: React.FC = () => {
             setWorkers(prev => [...prev]);
           }}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {workerToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="bg-rose-50 border-b border-rose-100 p-5 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-slate-900 text-sm">
+                  {t('workers.deleteConfirmTitle', "Supprimer l'Artisan / Employé")}
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  {t('workers.deleteConfirmPrompt', 'Êtes-vous sûr de vouloir supprimer définitivement la fiche de')} <strong className="text-slate-800 font-bold">"{workerToDelete.name}"</strong> ?
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setWorkerToDelete(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3.5 text-xs text-slate-600">
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-start gap-2.5 text-amber-800">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-[11.5px] leading-relaxed">
+                  {t('workers.deleteWarning', 'Cette action supprimera également toutes les avances, primes, retenues et identifiants d\'accès associés à cet employé.')}
+                </p>
+              </div>
+
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-1.5 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('workers.modal.fullName', 'Nom Complet')} :</span>
+                  <span className="font-bold text-slate-800">{workerToDelete.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('workers.modal.position', 'Poste')} :</span>
+                  <span className="text-slate-800">{workerToDelete.position}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('clients.phone', 'Téléphone')} :</span>
+                  <span className="text-slate-800">{workerToDelete.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t('workers.baseSalary', 'Salaire de Base')} :</span>
+                  <span className="font-bold text-nasaq-teal">{formatMoney(workerToDelete.base_salary)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setWorkerToDelete(null)}
+                disabled={deletingWorker}
+                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-100 transition text-xs"
+              >
+                {t('common.cancel', 'Annuler')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteWorker}
+                disabled={deletingWorker}
+                className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white rounded-xl font-bold transition text-xs shadow-xs disabled:opacity-50"
+              >
+                {deletingWorker ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>{t('workers.deleting', 'Suppression...')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{t('workers.confirmDelete', 'Supprimer définitivement')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

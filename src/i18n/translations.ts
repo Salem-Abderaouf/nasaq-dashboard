@@ -436,6 +436,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'workers.credsModal.disabledWarning': 'Accès Application Désactivé',
     'workers.credsModal.disabledDesc': 'Cet employé n\'a pas accès à la plateforme. Pour lui attribuer un accès sécurisé, activez l\'interrupteur ci-dessus.',
     'workers.credsModal.save': 'Enregistrer les Accès',
+    'workers.deleteWorker': "Supprimer l'employé",
+    'workers.deleteConfirmTitle': "Supprimer l'Artisan / Employé",
+    'workers.deleteConfirmPrompt': "Êtes-vous sûr de vouloir supprimer définitivement la fiche de",
+    'workers.deleteWarning': "Cette action supprimera également toutes les avances, primes, retenues et identifiants d'accès associés à cet employé.",
+    'workers.deleteSuccess': 'Employé "{name}" supprimé avec succès.',
+    'workers.deleteError': "Erreur lors de la suppression de l'employé.",
+    'workers.confirmDelete': "Supprimer définitivement",
+    'workers.deleting': "Suppression...",
+    'workers.deleteTooltip': "Supprimer cet artisan de l'équipe",
 
     // Presets
     'workers.preset.workshop': 'Artisan Atelier & Découpe CNC',
@@ -943,6 +952,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'workers.credsModal.disabledWarning': 'App Access Disabled',
     'workers.credsModal.disabledDesc': 'This employee does not have platform access. To grant access, enable the toggle above.',
     'workers.credsModal.save': 'Save Access Rights',
+    'workers.deleteWorker': 'Delete Employee',
+    'workers.deleteConfirmTitle': 'Delete Employee / Artisan',
+    'workers.deleteConfirmPrompt': 'Are you sure you want to permanently delete the profile of',
+    'workers.deleteWarning': 'This action will also permanently delete all salary advances, bonuses, deductions, and application login access associated with this employee.',
+    'workers.deleteSuccess': 'Employee "{name}" deleted successfully.',
+    'workers.deleteError': 'Error deleting employee.',
+    'workers.confirmDelete': 'Delete Permanently',
+    'workers.deleting': 'Deleting...',
+    'workers.deleteTooltip': 'Delete this artisan from the team',
 
     // Presets
     'workers.preset.workshop': 'Workshop Artisan & CNC',
@@ -1450,6 +1468,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'workers.credsModal.disabledWarning': 'الولوج إلى التطبيق معطل',
     'workers.credsModal.disabledDesc': 'هذا الموظف ليس لديه صلاحية الدخول للمنصة. لمنحه وصولاً آمناً، قم بتفعيل الزر أعلاه.',
     'workers.credsModal.save': 'حفظ الصلاحيات',
+    'workers.deleteWorker': 'حذف الموظف',
+    'workers.deleteConfirmTitle': 'حذف الموظف / الحرفي',
+    'workers.deleteConfirmPrompt': 'هل أنت متأكد من رغبتك في حذف ملف',
+    'workers.deleteWarning': 'سيؤدي هذا الإجراء أيضاً إلى حذف جميع السلف، المكافآت، الاقتطاعات وبيانات تسجيل الدخول المرتبطة بهذا الموظف نهائياً.',
+    'workers.deleteSuccess': 'تم حذف الموظف "{name}" بنجاح.',
+    'workers.deleteError': 'خطأ أثناء حذف الموظف.',
+    'workers.confirmDelete': 'حذف نهائياً',
+    'workers.deleting': 'جاري الحذف...',
+    'workers.deleteTooltip': 'حذف هذا الحرفي من الفريق',
 
     // Presets
     'workers.preset.workshop': 'حرفي الورشة والقص CNC',

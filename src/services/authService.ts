@@ -114,6 +114,25 @@ export class AuthService {
   }
 
   /**
+   * Delete stored credentials and access permissions for a worker
+   */
+  static deleteWorkerCredentials(worker: Worker): void {
+    try {
+      const accounts = this.getStoredWorkerAccounts();
+      const emailKey = worker.email ? worker.email.trim().toLowerCase() : '';
+      if (emailKey && accounts[emailKey]) {
+        delete accounts[emailKey];
+      }
+      if (worker.id && accounts[worker.id]) {
+        delete accounts[worker.id];
+      }
+      localStorage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(accounts));
+    } catch (err) {
+      console.warn('Error deleting worker credentials from local storage:', err);
+    }
+  }
+
+  /**
    * Retrieve active session user
    */
   static getCurrentUser(): AuthenticatedUser | null {
