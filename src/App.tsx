@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Sidebar, NavView } from './components/layout/Sidebar';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Sidebar, NavView, VIEW_TO_PATH } from './components/layout/Sidebar';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { Header } from './components/layout/Header';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -18,7 +19,8 @@ import { Order, Client, DoorProduct } from './types/database';
 
 const DashboardLayout: React.FC = () => {
   const { user, isAuthenticated, hasPermission } = useAuth();
-  const [currentView, setCurrentView] = useState<NavView>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Modals state
@@ -28,20 +30,37 @@ const DashboardLayout: React.FC = () => {
   const [initialStudioProduct, setInitialStudioProduct] = useState<DoorProduct | null>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
-  // Auto-redirect if worker lands on or attempts to view a restricted tab
+  // Derive currentView from the URL path for sidebar & header state
+  const currentView: NavView = useMemo(() => {
+    const path = location.pathname.toLowerCase();
+    if (path.startsWith('/order-management') || path.startsWith('/orders')) return 'orders';
+    if (path.startsWith('/configurator') || path.startsWith('/studio')) return 'configurator';
+    if (path.startsWith('/clients')) return 'clients';
+    if (path.startsWith('/prospects')) return 'prospects';
+    if (path.startsWith('/products') || path.startsWith('/catalog')) return 'products';
+    if (path.startsWith('/workers') || path.startsWith('/payroll')) return 'workers';
+    return 'dashboard';
+  }, [location.pathname]);
+
+  const handleNavigate = (view: NavView) => {
+    const targetPath = VIEW_TO_PATH[view] || '/dashboard';
+    navigate(targetPath);
+  };
+
+  // Auto-redirect if worker lands on or attempts to view a restricted path
   useEffect(() => {
     if (!user) return;
 
     if (currentView === 'workers' && !hasPermission('canAccessPayroll')) {
-      setCurrentView(hasPermission('canViewOrders') ? 'orders' : 'dashboard');
+      navigate(hasPermission('canViewOrders') ? '/order-management' : '/dashboard', { replace: true });
     } else if (currentView === 'prospects' && !hasPermission('canManageProspects')) {
-      setCurrentView('orders');
+      navigate('/order-management', { replace: true });
     } else if (currentView === 'configurator' && !hasPermission('canCreateOrders')) {
-      setCurrentView('orders');
+      navigate('/order-management', { replace: true });
     } else if (currentView === 'dashboard' && !hasPermission('canViewDashboard')) {
-      setCurrentView('orders');
+      navigate('/order-management', { replace: true });
     }
-  }, [user, currentView, hasPermission]);
+  }, [user, currentView, hasPermission, navigate]);
 
   if (!isAuthenticated) {
     return <LoginView />;
@@ -66,7 +85,7 @@ const DashboardLayout: React.FC = () => {
       }));
       localStorage.setItem('nasaq_dashboard_doors_state', JSON.stringify([]));
     } catch {}
-    setCurrentView('configurator');
+    navigate('/configurator');
   };
 
   return (
@@ -74,7 +93,7 @@ const DashboardLayout: React.FC = () => {
       {/* SIDEBAR NAVIGATION (Desktop) */}
       <Sidebar
         currentView={currentView}
-        onNavigate={setCurrentView}
+        onNavigate={handleNavigate}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
@@ -82,7 +101,7 @@ const DashboardLayout: React.FC = () => {
       {/* MOBILE BOTTOM NAVIGATION BAR */}
       <MobileBottomNav
         currentView={currentView}
-        onNavigate={setCurrentView}
+        onNavigate={handleNavigate}
       />
 
       {/* MAIN CONTAINER */}
@@ -90,80 +109,162 @@ const DashboardLayout: React.FC = () => {
         {/* HEADER */}
         <Header
           currentView={currentView}
-          onNavigate={setCurrentView}
+          onNavigate={handleNavigate}
         />
 
-        {/* WORKSPACE VIEW CONTAINER */}
+        {/* WORKSPACE VIEW CONTAINER WITH REACT ROUTER */}
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0 print:!h-auto print:!overflow-visible print:!p-0 print:!pb-0">
-          {currentView === 'dashboard' && hasPermission('canViewDashboard') && (
-            <DashboardView
-              key={ordersRefreshKey}
-              onNavigate={setCurrentView}
-              onSelectOrder={setSelectedOrder}
-              onRecordPayment={setPaymentModalOrder}
+          <Routes>
+            {/* 1. Dashboard Route */}
+            <Route 
+              path="/dashboard" 
+              element={
+                hasPermission('canViewDashboard') ? (
+                  <DashboardView
+                    key={ordersRefreshKey}
+                    onNavigate={handleNavigate}
+                    onSelectOrder={setSelectedOrder}
+                    onRecordPayment={setPaymentModalOrder}
+                  />
+                ) : (
+                  <Navigate to="/order-management" replace />
+                )
+              } 
             />
-          )}
 
-          {currentView === 'configurator' && hasPermission('canCreateOrders') && (
-            <ConfiguratorView 
-              onOrderSaved={() => {
-                setOrderToEdit(null);
-                setInitialStudioProduct(null);
-                setOrdersRefreshKey(k => k + 1);
-                setCurrentView('orders');
-              }}
-              orderToEdit={orderToEdit}
-              initialProduct={initialStudioProduct}
-              onClearOrderToEdit={() => setOrderToEdit(null)}
-              onClearInitialProduct={() => setInitialStudioProduct(null)}
+            {/* 2. Order Management Route */}
+            <Route 
+              path="/order-management" 
+              element={
+                hasPermission('canViewOrders') ? (
+                  <OrdersListView
+                    key={ordersRefreshKey}
+                    onOpenConfigurator={() => {
+                      setOrderToEdit(null);
+                      setInitialStudioProduct(null);
+                      try {
+                        localStorage.removeItem('nasaq_dashboard_info_state');
+                        localStorage.removeItem('nasaq_dashboard_doors_state');
+                      } catch {}
+                      navigate('/configurator');
+                    }}
+                    onEditOrderInStudio={(order) => {
+                      setOrderToEdit(order);
+                      setInitialStudioProduct(null);
+                      navigate('/configurator');
+                    }}
+                    onSelectOrder={setSelectedOrder}
+                    onRecordPayment={setPaymentModalOrder}
+                  />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              } 
             />
-          )}
+            {/* Alias /orders -> /order-management */}
+            <Route path="/orders" element={<Navigate to="/order-management" replace />} />
 
-          {currentView === 'orders' && hasPermission('canViewOrders') && (
-            <OrdersListView
-              key={ordersRefreshKey}
-              onOpenConfigurator={() => {
-                setOrderToEdit(null);
-                setInitialStudioProduct(null);
-                try {
-                  localStorage.removeItem('nasaq_dashboard_info_state');
-                  localStorage.removeItem('nasaq_dashboard_doors_state');
-                } catch {}
-                setCurrentView('configurator');
-              }}
-              onEditOrderInStudio={(order) => {
-                setOrderToEdit(order);
-                setInitialStudioProduct(null);
-                setCurrentView('configurator');
-              }}
-              onSelectOrder={setSelectedOrder}
-              onRecordPayment={setPaymentModalOrder}
+            {/* 3. 2D Configurator Studio Route */}
+            <Route 
+              path="/configurator" 
+              element={
+                hasPermission('canCreateOrders') ? (
+                  <ConfiguratorView 
+                    onOrderSaved={() => {
+                      setOrderToEdit(null);
+                      setInitialStudioProduct(null);
+                      setOrdersRefreshKey(k => k + 1);
+                      navigate('/order-management');
+                    }}
+                    orderToEdit={orderToEdit}
+                    initialProduct={initialStudioProduct}
+                    onClearOrderToEdit={() => setOrderToEdit(null)}
+                    onClearInitialProduct={() => setInitialStudioProduct(null)}
+                  />
+                ) : (
+                  <Navigate to="/order-management" replace />
+                )
+              } 
             />
-          )}
+            {/* Alias /studio -> /configurator */}
+            <Route path="/studio" element={<Navigate to="/configurator" replace />} />
 
-          {currentView === 'clients' && hasPermission('canManageClients') && (
-            <ClientsListView onStartOrderForClient={handleStartOrderForClient} />
-          )}
-
-          {currentView === 'prospects' && hasPermission('canManageProspects') && (
-            <ProspectsPipelineView />
-          )}
-
-          {currentView === 'products' && (
-            <ProductsCatalogView 
-              onOpenStudioWithProduct={(prod) => {
-                if (hasPermission('canCreateOrders')) {
-                  setOrderToEdit(null);
-                  setInitialStudioProduct(prod);
-                  setCurrentView('configurator');
-                }
-              }} 
+            {/* 4. Clients CRM Route */}
+            <Route 
+              path="/clients" 
+              element={
+                hasPermission('canManageClients') ? (
+                  <ClientsListView onStartOrderForClient={handleStartOrderForClient} />
+                ) : (
+                  <Navigate to="/order-management" replace />
+                )
+              } 
             />
-          )}
 
-          {currentView === 'workers' && hasPermission('canAccessPayroll') && (
-            <WorkersPayrollView />
-          )}
+            {/* 5. Prospects Pipeline Route */}
+            <Route 
+              path="/prospects" 
+              element={
+                hasPermission('canManageProspects') ? (
+                  <ProspectsPipelineView />
+                ) : (
+                  <Navigate to="/order-management" replace />
+                )
+              } 
+            />
+
+            {/* 6. WPC Doors Catalog Route */}
+            <Route 
+              path="/products" 
+              element={
+                <ProductsCatalogView 
+                  onOpenStudioWithProduct={(prod) => {
+                    if (hasPermission('canCreateOrders')) {
+                      setOrderToEdit(null);
+                      setInitialStudioProduct(prod);
+                      navigate('/configurator');
+                    }
+                  }} 
+                />
+              } 
+            />
+            {/* Alias /catalog -> /products */}
+            <Route path="/catalog" element={<Navigate to="/products" replace />} />
+
+            {/* 7. Workers & Payroll (RH) Route */}
+            <Route 
+              path="/workers" 
+              element={
+                hasPermission('canAccessPayroll') ? (
+                  <WorkersPayrollView />
+                ) : (
+                  <Navigate to="/order-management" replace />
+                )
+              } 
+            />
+            {/* Alias /payroll -> /workers */}
+            <Route path="/payroll" element={<Navigate to="/workers" replace />} />
+
+            {/* Default Landing / Catch-all Redirect */}
+            <Route 
+              path="/" 
+              element={
+                <Navigate 
+                  to={hasPermission('canViewDashboard') ? "/dashboard" : "/order-management"} 
+                  replace 
+                />
+              } 
+            />
+            <Route 
+              path="*" 
+              element={
+                <Navigate 
+                  to={hasPermission('canViewDashboard') ? "/dashboard" : "/order-management"} 
+                  replace 
+                />
+              } 
+            />
+          </Routes>
         </main>
       </div>
 
@@ -182,7 +283,7 @@ const DashboardLayout: React.FC = () => {
           onRecordPayment={(ord) => setPaymentModalOrder(ord)}
           onEditInStudio={(order) => {
             setOrderToEdit(order);
-            setCurrentView('configurator');
+            navigate('/configurator');
           }}
         />
       )}
@@ -203,11 +304,13 @@ const DashboardLayout: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <DashboardLayout />
-      </AuthProvider>
-    </LanguageProvider>
+    <BrowserRouter>
+      <LanguageProvider>
+        <AuthProvider>
+          <DashboardLayout />
+        </AuthProvider>
+      </LanguageProvider>
+    </BrowserRouter>
   );
 };
 

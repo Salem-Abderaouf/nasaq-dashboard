@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   DoorOpen, 
@@ -25,6 +26,16 @@ export type NavView =
   | 'prospects' 
   | 'products' 
   | 'workers';
+
+export const VIEW_TO_PATH: Record<NavView, string> = {
+  dashboard: '/dashboard',
+  configurator: '/configurator',
+  orders: '/order-management',
+  clients: '/clients',
+  prospects: '/prospects',
+  products: '/products',
+  workers: '/workers'
+};
 
 interface SidebarProps {
   currentView: NavView;
@@ -120,10 +131,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           const itemLabel = t(item.labelKey, item.defaultLabel);
 
           return (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              onClick={() => onNavigate(item.id)}
+              to={VIEW_TO_PATH[item.id]}
+              onClick={() => onNavigate && onNavigate(item.id)}
               className={`w-full flex items-center transition group relative ${
                 collapsed 
                   ? 'justify-center py-2.5 px-0 rounded-xl' 
@@ -149,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 </div>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>
