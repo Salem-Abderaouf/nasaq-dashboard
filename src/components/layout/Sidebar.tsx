@@ -7,16 +7,11 @@ import {
   TrendingUp, 
   Layers, 
   BadgeDollarSign, 
-  Database,
-  ChevronLeft,
-  ChevronRight,
-  ShieldCheck,
-  UserCheck,
-  Sparkles,
-  LogOut,
-  Hammer,
-  Key,
-  Store
+  ChevronLeft, 
+  ChevronRight, 
+  ShieldCheck, 
+  LogOut, 
+  Hammer 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -29,25 +24,20 @@ export type NavView =
   | 'clients' 
   | 'prospects' 
   | 'products' 
-  | 'workers'
-  | 'store';
+  | 'workers';
 
 interface SidebarProps {
   currentView: NavView;
   onNavigate: (view: NavView) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-  onSeedData: () => void;
-  isSeeding?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onNavigate,
   collapsed,
-  onToggleCollapse,
-  onSeedData,
-  isSeeding = false
+  onToggleCollapse
 }) => {
   const { user, logout, hasPermission } = useAuth();
   const { t, isRtl } = useLanguage();
@@ -66,8 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'clients', labelKey: 'nav.clients', defaultLabel: 'Clients & CRM', icon: Users, permission: 'canManageClients' },
     { id: 'prospects', labelKey: 'nav.prospects', defaultLabel: 'Pipeline Prospects', icon: TrendingUp, permission: 'canManageProspects' },
     { id: 'products', labelKey: 'nav.products', defaultLabel: 'Catalogue Portes WPC', icon: Layers },
-    { id: 'workers', labelKey: 'nav.workers', defaultLabel: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' },
-    { id: 'store', labelKey: 'nav.store', defaultLabel: 'Boutique & Atelier', icon: Store },
+    { id: 'workers', labelKey: 'nav.workers', defaultLabel: 'Équipe & Paie (RH)', icon: BadgeDollarSign, permission: 'canAccessPayroll' }
   ];
 
   // Filter navigation items by active user permissions
@@ -219,32 +208,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <LogOut className="w-4 h-4" />
           </button>
-        )}
-
-        {/* Seed Database Button (for Admin) */}
-        {user?.role === 'admin' && (
-          !collapsed ? (
-            <button
-              type="button"
-              onClick={onSeedData}
-              disabled={isSeeding}
-              className="w-full py-1.5 px-2 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-light border border-nasaq-gold/40 rounded-lg text-[10.5px] font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-50"
-              title={t('nav.seedTooltip', "Injecter des données d'exemples dans Supabase (Clients, Portes, RH)")}
-            >
-              <Sparkles className="w-3 h-3 text-nasaq-gold" />
-              {isSeeding ? t('nav.seeding', 'Injection...') : t('nav.seedData', 'Initialiser Démo Supabase')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onSeedData}
-              disabled={isSeeding}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold mx-auto transition"
-              title={t('nav.seedData', 'Initialiser Démo Supabase')}
-            >
-              <Database className="w-4 h-4" />
-            </button>
-          )
         )}
       </div>
     </aside>

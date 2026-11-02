@@ -3,21 +3,17 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { LanguageSelector } from '../common/LanguageSelector';
 import { 
-  ShieldCheck, 
   Lock, 
   Mail, 
   Eye, 
   EyeOff, 
-  Hammer, 
-  Briefcase, 
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   AlertCircle
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
-  const { login, quickLogin } = useAuth();
+  const { login } = useAuth();
   const { t, isRtl } = useLanguage();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -37,16 +33,6 @@ export const LoginView: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de la connexion.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuick = async (role: 'admin' | 'workshop' | 'commercial') => {
-    setError(null);
-    setLoading(true);
-    try {
-      await quickLogin(role);
     } finally {
       setLoading(false);
     }
@@ -102,7 +88,7 @@ export const LoginView: React.FC = () => {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={t('auth.identifierPlaceholder', 'jolylip@gmail.com ou email employé')}
+                  placeholder={t('auth.identifierPlaceholder', 'contact@nasaq.dz ou email professionnel')}
                   className={`w-full ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:border-nasaq-teal focus:ring-2 focus:ring-nasaq-teal/20 outline-none transition`}
                 />
               </div>
@@ -144,78 +130,6 @@ export const LoginView: React.FC = () => {
               {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
-
-          {/* Quick Demo Logins Section */}
-          <div className="pt-4 border-t border-slate-100">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-nasaq-gold" />
-                {t('auth.quickAccess', 'Accès Rapides Préconfigurés')}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuick('admin')}
-                disabled={loading}
-                className="w-full text-left p-2.5 rounded-xl border border-nasaq-gold/40 bg-nasaq-gold/10 hover:bg-nasaq-gold/20 transition flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-nasaq-gold text-slate-900 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">{t('auth.adminRole', 'Direction Générale (Admin)')}</div>
-                    <div className="text-[10px] text-slate-500 font-mono">{t('auth.adminDesc', 'jolylip@gmail.com • Accès total')}</div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-nasaq-gold-dark group-hover:translate-x-0.5 transition font-mono">
-                  {t('auth.enter', 'Entrer →')}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuick('workshop')}
-                disabled={loading}
-                className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-nasaq-teal text-white flex items-center justify-center shrink-0">
-                    <Hammer className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">{t('auth.workshopRole', "Rachid (Chef d'Atelier)")}</div>
-                    <div className="text-[10px] text-slate-500">{t('auth.workshopDesc', 'Mode Atelier : fiches de débit, usinage, sans prix')}</div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-nasaq-teal group-hover:translate-x-0.5 transition font-mono">
-                  {t('auth.enter', 'Entrer →')}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuick('commercial')}
-                disabled={loading}
-                className="w-full text-left p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">{t('auth.commercialRole', 'Sofiane (Commercial Showroom)')}</div>
-                    <div className="text-[10px] text-slate-500">{t('auth.commercialDesc', 'Mode Vente : Studio devis 2D, clients, acomptes')}</div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 group-hover:translate-x-0.5 transition font-mono">
-                  {t('auth.enter', 'Entrer →')}
-                </span>
-              </button>
-            </div>
-          </div>
 
           <div className="text-center text-[10.5px] text-slate-400">
             {t('auth.rbacNote', "Contrôle d'accès basé sur les rôles (RBAC) & RLS Supabase")}

@@ -9,12 +9,9 @@ import {
   TrendingUp, 
   Layers, 
   BadgeDollarSign, 
-  Store, 
   LogOut, 
-  Sparkles, 
   ShieldCheck, 
-  Hammer,
-  Database
+  Hammer
 } from 'lucide-react';
 import { NavView } from './Sidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -24,22 +21,18 @@ import { LanguageSelector } from '../common/LanguageSelector';
 interface MobileBottomNavProps {
   currentView: NavView;
   onNavigate: (view: NavView) => void;
-  onSeedData: () => void;
-  isSeeding?: boolean;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   currentView,
-  onNavigate,
-  onSeedData,
-  isSeeding = false
+  onNavigate
 }) => {
   const { user, logout, hasPermission } = useAuth();
   const { t, isRtl } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Check if active view is one of the secondary items in the drawer
-  const isSecondaryActive = ['prospects', 'products', 'workers', 'store'].includes(currentView);
+  const isSecondaryActive = ['prospects', 'products', 'workers'].includes(currentView);
 
   const handleSelectTab = (view: NavView) => {
     onNavigate(view);
@@ -252,20 +245,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                   <span className="flex-1 text-left">{t('nav.workers', 'Équipe & Paie (RH)')}</span>
                 </button>
               )}
-
-              {/* Store & Workshop Info */}
-              <button
-                type="button"
-                onClick={() => handleSelectTab('store')}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl text-xs font-bold transition ${
-                  currentView === 'store'
-                    ? 'bg-nasaq-teal text-white border-l-4 border-nasaq-gold shadow-md'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-200'
-                }`}
-              >
-                <Store className="w-4 h-4 text-nasaq-gold-light" />
-                <span className="flex-1 text-left">{t('nav.store', 'Boutique & Atelier')}</span>
-              </button>
             </div>
 
             {/* Language & Settings */}
@@ -276,22 +255,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
                 </span>
                 <LanguageSelector variant="header" />
               </div>
-
-              {/* Admin Seed Demo Button */}
-              {user?.role === 'admin' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onSeedData();
-                  }}
-                  disabled={isSeeding}
-                  className="w-full py-2.5 px-3 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-light border border-nasaq-gold/40 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition disabled:opacity-50"
-                >
-                  <Sparkles className="w-4 h-4 text-nasaq-gold" />
-                  <span>{isSeeding ? t('nav.seeding', 'Injection...') : t('nav.seedData', 'Initialiser Démo Supabase')}</span>
-                </button>
-              )}
 
               {/* Logout Button */}
               <button

@@ -7,20 +7,18 @@ import { PipelineDistribution } from './PipelineDistribution';
 import { RecentOrdersTable } from './RecentOrdersTable';
 import { TopDoorsLeaderboard } from './TopDoorsLeaderboard';
 import { NavView } from '../layout/Sidebar';
-import { RefreshCw, Plus, Sparkles } from 'lucide-react';
+import { RefreshCw, Plus } from 'lucide-react';
 
 interface DashboardViewProps {
   onNavigate: (view: NavView) => void;
   onSelectOrder: (order: Order) => void;
   onRecordPayment: (order: Order) => void;
-  onSeedData: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigate,
   onSelectOrder,
-  onRecordPayment,
-  onSeedData
+  onRecordPayment
 }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
@@ -221,23 +219,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {t('dashboard.welcomeTitle', 'Bienvenue dans le Tableau de Bord NASAQ WPC')}
           </h3>
           <p className="text-xs text-slate-600 max-w-xl mx-auto leading-relaxed">
-            {t('dashboard.welcomeMessage', 'Votre base de données Supabase est actuellement vide. Vous pouvez initialiser un jeu de données de démonstration pour tester toutes les fonctionnalités ou ouvrir directement le Studio de Configuration.')}
+            {t('dashboard.welcomeMessage', 'Votre espace NASAQ WPC est opérationnel. Vous pouvez lancer directement le Studio de Configuration pour créer votre premier devis ou commande.')}
           </p>
-          <div className="flex justify-center gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onSeedData}
-              className="px-4 py-2 bg-nasaq-gold hover:bg-nasaq-gold-dark text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              {t('dashboard.initDemo', 'Initialiser Démo Supabase')}
-            </button>
+          <div className="flex justify-center pt-1">
             <button
               type="button"
               onClick={() => onNavigate('configurator')}
-              className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               {t('dashboard.createFirstQuote', 'Créer Premier Devis')}
             </button>
           </div>

@@ -399,7 +399,7 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
           <div className="col-span-full py-16 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200 p-6">
             <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
             <p className="text-xs font-semibold text-slate-600">
-              {t('clients.noClients', 'Aucun client trouvé. Créez-en un nouveau ou utilisez l\'initialisation démo.')}
+              {t('clients.noClients', 'Aucun client trouvé. Créez-en un nouveau pour commencer.')}
             </p>
           </div>
         ) : (

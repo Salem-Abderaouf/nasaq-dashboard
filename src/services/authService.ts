@@ -268,51 +268,6 @@ export class AuthService {
   }
 
   /**
-   * Fast 1-click login for demonstration and switching
-   */
-  static async quickLogin(roleType: 'admin' | 'workshop' | 'commercial'): Promise<AuthenticatedUser> {
-    if (roleType === 'admin') {
-      const user: AuthenticatedUser = {
-        id: 'bb1c76f7-8233-46b8-b471-3611186c189a',
-        name: 'Administrateur Principal',
-        email: 'jolylip@gmail.com',
-        role: 'admin',
-        position: 'Administrateur Général',
-        permissions: ADMIN_PERMISSIONS
-      };
-      this.setCurrentUser(user);
-      return user;
-    }
-
-    if (roleType === 'workshop') {
-      const workshopPermissions = PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions;
-      const user: AuthenticatedUser = {
-        id: 'worker-rachid',
-        name: 'Rachid Mebarki',
-        email: 'rachid.workshop@nasaq.dz',
-        role: 'worker',
-        position: 'Chef d\'Atelier & Maître Menuisier',
-        permissions: workshopPermissions
-      };
-      this.setCurrentUser(user);
-      return user;
-    }
-
-    // Commercial
-    const commPermissions = PERMISSION_PRESETS.find(p => p.id === 'commercial')!.permissions;
-    const user: AuthenticatedUser = {
-      id: 'worker-sofiane',
-      name: 'Sofiane Zenati',
-      email: 'sofiane.sales@nasaq.dz',
-      role: 'worker',
-      position: 'Responsable Commercial & Showroom',
-      permissions: commPermissions
-    };
-    this.setCurrentUser(user);
-    return user;
-  }
-
-  /**
    * Logout session
    */
   static async logout(): Promise<void> {

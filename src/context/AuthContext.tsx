@@ -7,7 +7,6 @@ interface AuthContextType {
   user: AuthenticatedUser | null;
   isAuthenticated: boolean;
   login: (identifier: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  quickLogin: (roleType: 'admin' | 'workshop' | 'commercial') => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (key: keyof WorkerPermissions) => boolean;
   refreshUser: () => void;
@@ -46,11 +45,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { success: false, error: res.error || 'Échec de connexion.' };
   };
 
-  const quickLogin = async (roleType: 'admin' | 'workshop' | 'commercial') => {
-    const newUser = await AuthService.quickLogin(roleType);
-    setUser(newUser);
-  };
-
   const logout = async () => {
     await AuthService.logout();
     setUser(null);
@@ -68,7 +62,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         user,
         isAuthenticated: !!user,
         login,
-        quickLogin,
         logout,
         hasPermission,
         refreshUser
