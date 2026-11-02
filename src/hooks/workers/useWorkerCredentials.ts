@@ -2,14 +2,14 @@ import { useState, useCallback } from 'react';
 import { Worker, WorkerAppCredentials, WorkerPermissions } from '../../types/database';
 import { PERMISSION_PRESETS } from '../../types/auth';
 import { AuthService } from '../../services/authService';
-import { generateRandomPassword } from '../../helpers/workers/payrollHelpers';
+import { generateRandomPassword, parseWorkerCredentials } from '../../helpers/workers/payrollHelpers';
 
 export function useWorkerCredentials(
   worker: Worker,
   onClose: () => void,
   onSaved: (credentials: WorkerAppCredentials) => void
 ) {
-  const existingCreds = AuthService.getWorkerCredentials(worker.email || worker.id);
+  const existingCreds = parseWorkerCredentials(worker) || AuthService.getWorkerCredentials(worker.email || worker.id);
 
   const [enabled, setEnabled] = useState<boolean>(
     existingCreds ? existingCreds.app_access_enabled : true

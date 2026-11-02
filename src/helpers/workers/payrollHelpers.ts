@@ -1,5 +1,41 @@
-import { SalaryAdvance, SalaryBonus, SalaryDeduction, Worker } from '../../types/database';
+import { SalaryAdvance, SalaryBonus, SalaryDeduction, Worker, WorkerAppCredentials } from '../../types/database';
 import { SupabaseClient } from '@supabase/supabase-js';
+
+const META_TAG_REGEX = /<!--\s*NASAQ_CREDS:([\s\S]*?)\s*-->/;
+
+/**
+ * Parses worker application credentials from worker.notes or login_credentials
+ */
+export function parseWorkerCredentials(worker: Partial<Worker>): WorkerAppCredentials | null {
+  if (worker.login_credentials) return worker.login_credentials;
+  const notes = worker.notes || '';
+  const match = notes.match(META_TAG_REGEX);
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (parsed.login_email) return parsed as WorkerAppCredentials;
+    } catch (e) {
+      console.warn('Could not parse NASAQ worker credentials from notes:', e);
+    }
+  }
+  return null;
+}
+
+/**
+ * Serializes worker notes and credentials for persistent database storage
+ */
+export function serializeWorkerNotes(notes: string | undefined | null, creds: WorkerAppCredentials): string {
+  const cleanNotes = (notes || '').replace(META_TAG_REGEX, '').trim();
+  const payload = JSON.stringify(creds);
+  return `${cleanNotes ? cleanNotes + '\n\n' : ''}<!-- NASAQ_CREDS:${payload} -->`.trim();
+}
+
+/**
+ * Returns clean notes without internal credentials metadata tag
+ */
+export function extractCleanWorkerNotes(notes: string | undefined | null): string {
+  return (notes || '').replace(META_TAG_REGEX, '').trim();
+}
 
 /**
  * Computes net salary for an employee according to Section 7.4 of business.md:

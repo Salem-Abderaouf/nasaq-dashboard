@@ -8,7 +8,8 @@ import {
   calculateTotalBonuses,
   calculateTotalDeductions,
   calculateUnsettledAdvances,
-  deleteWorkerCascade
+  deleteWorkerCascade,
+  serializeWorkerNotes
 } from '../../helpers/workers/payrollHelpers';
 
 export function useWorkersPayroll() {
@@ -209,6 +210,14 @@ export function useWorkersPayroll() {
     try {
       let createdWorker: Worker;
       const calculatedEmail = newLoginEmail.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@nasaq.dz`;
+      const preset = PERMISSION_PRESETS.find(p => p.id === newPresetId) || PERMISSION_PRESETS[0];
+      const initialCreds = {
+        login_email: calculatedEmail.toLowerCase(),
+        password: newPassword.trim() || 'worker123',
+        app_access_enabled: newAppAccess,
+        permissions: preset.permissions
+      };
+      const serializedNotes = serializeWorkerNotes(null, initialCreds);
 
       const { data, error } = await supabase
         .from('workers')
@@ -220,7 +229,8 @@ export function useWorkersPayroll() {
           base_salary: baseSalary,
           payment_day: paymentDay,
           employment_date: new Date().toISOString().split('T')[0],
-          status: 'active'
+          status: 'active',
+          notes: serializedNotes
         })
         .select()
         .single();
@@ -235,19 +245,13 @@ export function useWorkersPayroll() {
           base_salary: baseSalary,
           payment_day: paymentDay,
           employment_date: new Date().toISOString().split('T')[0],
-          status: 'active'
+          status: 'active',
+          notes: serializedNotes
         };
       } else {
         createdWorker = data;
       }
 
-      const preset = PERMISSION_PRESETS.find(p => p.id === newPresetId) || PERMISSION_PRESETS[0];
-      const initialCreds = {
-        login_email: calculatedEmail.toLowerCase(),
-        password: newPassword.trim() || 'worker123',
-        app_access_enabled: newAppAccess,
-        permissions: preset.permissions
-      };
       AuthService.saveWorkerCredentials(createdWorker, initialCreds);
 
       setWorkers(prev => [...prev, createdWorker]);

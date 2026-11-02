@@ -196,6 +196,7 @@ export interface Worker {
   status: 'active' | 'inactive';
   base_salary: number;
   payment_day: number;
+  notes?: string | null;
   user_id?: string | null;
   created_at?: string;
   login_credentials?: WorkerAppCredentials;

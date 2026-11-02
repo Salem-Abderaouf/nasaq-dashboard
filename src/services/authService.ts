@@ -1,9 +1,20 @@
 import { supabase } from '../api/supabase';
-import { Worker, WorkerAppCredentials, WorkerPermissions } from '../types/database';
+import { Worker, WorkerAppCredentials } from '../types/database';
 import { AuthenticatedUser, ADMIN_PERMISSIONS, PERMISSION_PRESETS } from '../types/auth';
+import { parseWorkerCredentials, serializeWorkerNotes } from '../helpers/workers/payrollHelpers';
 
 const STORAGE_KEY_AUTH_USER = 'nasaq_auth_active_user';
 const STORAGE_KEY_WORKER_ACCOUNTS = 'nasaq_worker_credentials_db';
+
+function getSafeStorage(): Storage | null {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    return window.localStorage;
+  }
+  if (typeof localStorage !== 'undefined') {
+    return localStorage;
+  }
+  return null;
+}
 
 // Pre-configured default worker accounts for quick testing & initial setup
 const DEFAULT_WORKER_ACCOUNTS: Record<string, WorkerAppCredentials> = {
@@ -47,10 +58,13 @@ export class AuthService {
    */
   static getStoredWorkerAccounts(): Record<string, WorkerAppCredentials> {
     try {
-      const data = localStorage.getItem(STORAGE_KEY_WORKER_ACCOUNTS);
+      const storage = getSafeStorage();
+      const data = storage ? storage.getItem(STORAGE_KEY_WORKER_ACCOUNTS) : null;
       if (!data) {
         // Initialize with default worker accounts
-        localStorage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(DEFAULT_WORKER_ACCOUNTS));
+        if (storage) {
+          storage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(DEFAULT_WORKER_ACCOUNTS));
+        }
         return DEFAULT_WORKER_ACCOUNTS;
       }
       return JSON.parse(data);
@@ -82,7 +96,7 @@ export class AuthService {
   }
 
   /**
-   * Save or update credentials and permissions for a worker
+   * Save or update credentials and permissions for a worker in local cache and Supabase
    */
   static saveWorkerCredentials(worker: Worker, credentials: WorkerAppCredentials): void {
     const accounts = this.getStoredWorkerAccounts();
@@ -98,7 +112,23 @@ export class AuthService {
       accounts[worker.id] = accounts[emailKey];
     }
 
-    localStorage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(accounts));
+    getSafeStorage()?.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(accounts));
+
+    // Persist to Supabase so worker can log in from any device or in production
+    if (worker.id) {
+      const updatedNotes = serializeWorkerNotes(worker.notes, credentials);
+      worker.notes = updatedNotes;
+      supabase
+        .from('workers')
+        .update({
+          notes: updatedNotes,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', worker.id)
+        .then(({ error }) => {
+          if (error) console.warn('Could not sync worker credentials to Supabase:', error);
+        });
+    }
 
     // If currently logged in as this worker, update session permissions dynamically
     const current = this.getCurrentUser();
@@ -126,7 +156,7 @@ export class AuthService {
       if (worker.id && accounts[worker.id]) {
         delete accounts[worker.id];
       }
-      localStorage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(accounts));
+      getSafeStorage()?.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(accounts));
     } catch (err) {
       console.warn('Error deleting worker credentials from local storage:', err);
     }
@@ -137,7 +167,7 @@ export class AuthService {
    */
   static getCurrentUser(): AuthenticatedUser | null {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_AUTH_USER);
+      const stored = getSafeStorage()?.getItem(STORAGE_KEY_AUTH_USER);
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -148,10 +178,12 @@ export class AuthService {
    * Persist active session user
    */
   static setCurrentUser(user: AuthenticatedUser | null): void {
+    const storage = getSafeStorage();
+    if (!storage) return;
     if (user) {
-      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(user));
+      storage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(user));
     } else {
-      localStorage.removeItem(STORAGE_KEY_AUTH_USER);
+      storage.removeItem(STORAGE_KEY_AUTH_USER);
     }
   }
 
@@ -224,7 +256,66 @@ export class AuthService {
       // Continue to local worker check if Supabase error (e.g. unconfirmed email or offline)
     }
 
-    // 3. Check Worker App Credentials configured by Admin
+    // 3. Check Workers in Supabase Database (Cross-device & Production support)
+    try {
+      let dbWorkers: any[] = [];
+      const { data: matchedByEmail } = await supabase
+        .from('workers')
+        .select('*')
+        .ilike('email', cleanId);
+
+      if (matchedByEmail && matchedByEmail.length > 0) {
+        dbWorkers = matchedByEmail;
+      } else {
+        const { data: matchedByNotes } = await supabase
+          .from('workers')
+          .select('*')
+          .ilike('notes', `%${cleanId}%`);
+        if (matchedByNotes && matchedByNotes.length > 0) {
+          dbWorkers = matchedByNotes;
+        }
+      }
+
+      if (dbWorkers && dbWorkers.length > 0) {
+        for (const w of dbWorkers) {
+          const creds = parseWorkerCredentials(w) || this.getWorkerCredentials(w.email || cleanId);
+          if (creds && creds.login_email.toLowerCase() === cleanId) {
+            // Check if Admin disabled app access
+            if (!creds.app_access_enabled) {
+              return {
+                success: false,
+                error: 'Accès désactivé : L\'administrateur a suspendu la connexion de ce compte employé.'
+              };
+            }
+
+            // Check password
+            if (creds.password && creds.password !== cleanPass) {
+              return { success: false, error: 'Mot de passe ou code PIN incorrect.' };
+            }
+
+            // Cache in localStorage for offline availability
+            this.saveWorkerCredentials(w, creds);
+
+            const workerUser: AuthenticatedUser = {
+              id: w.id,
+              name: w.name,
+              email: w.email || cleanId,
+              role: 'worker',
+              position: w.position || 'Artisan Menuisier WPC',
+              workerId: w.id,
+              permissions: creds.permissions || PERMISSION_PRESETS[0].permissions
+            };
+
+            this.setCurrentUser(workerUser);
+            return { success: true, user: workerUser };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error verifying worker credentials against Supabase:', err);
+    }
+
+    // 4. Check Local Worker App Credentials (Offline / Preset Accounts)
     const accounts = this.getStoredWorkerAccounts();
     let matchedCreds: WorkerAppCredentials | null = null;
 
