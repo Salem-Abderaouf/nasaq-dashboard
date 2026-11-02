@@ -47,6 +47,18 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
       });
 
       if (payErr) throw payErr;
+
+      // Keep orders.paid_amount synchronized with new payment
+      const newPaidAmount = (Number(order.paid_amount) || 0) + numericAmount;
+      const { error: ordErr } = await supabase
+        .from('orders')
+        .update({ paid_amount: newPaidAmount, updated_at: new Date().toISOString() })
+        .eq('id', order.id);
+
+      if (ordErr) {
+        console.warn('Error updating order paid_amount after recording payment:', ordErr);
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {

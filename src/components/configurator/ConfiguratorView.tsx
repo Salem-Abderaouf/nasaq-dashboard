@@ -419,6 +419,8 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
 
       let targetOrderId = info.editingOrderId;
       let orderNumber = info.orderNumber;
+      const depositAmount = Number(info.paidAmount) || 0;
+      const todayIso = new Date().toISOString().split('T')[0];
 
       if (info.editingOrderId) {
         // UPDATE existing order in Supabase
@@ -427,7 +429,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
           .update({
             client_id: clientId,
             total_amount: grandTotal,
-            paid_amount: info.paidAmount,
+            paid_amount: depositAmount,
             is_promo_enabled: info.isPromoEnabled,
             notes: orderNotes,
             updated_at: new Date().toISOString()
@@ -441,6 +443,33 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
 
         // Delete old order_items and replace with updated doors
         await supabase.from('order_items').delete().eq('order_id', info.editingOrderId);
+
+        // Record any difference in deposit if deposit was changed in the studio
+        if (depositAmount > 0) {
+          const { data: existingPayments } = await supabase
+            .from('order_payments')
+            .select('id, amount, status')
+            .eq('order_id', info.editingOrderId)
+            .neq('status', 'voided');
+
+          const recordedTotal = (existingPayments || []).reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+          const diff = depositAmount - recordedTotal;
+
+          if (diff > 0) {
+            const { error: payErr } = await supabase.from('order_payments').insert({
+              order_id: info.editingOrderId,
+              amount: diff,
+              payment_date: todayIso,
+              notes: recordedTotal === 0 
+                ? `Acompte initial versé à la commande (${orderNumber || 'Commande'})` 
+                : `Versement complémentaire ajusté dans le studio (${orderNumber || 'Commande'})`,
+              status: 'successful'
+            });
+            if (payErr) {
+              console.error('Error recording payment adjustment on order update:', payErr);
+            }
+          }
+        }
       } else {
         // INSERT new order in Supabase
         let orderNumToSave = info.docRef;
@@ -455,7 +484,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
             client_id: clientId,
             status: 'confirmed',
             total_amount: grandTotal,
-            paid_amount: info.paidAmount,
+            paid_amount: depositAmount,
             is_promo_enabled: info.isPromoEnabled,
             notes: orderNotes
           })
@@ -466,14 +495,18 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         targetOrderId = newOrder.id;
         orderNumber = newOrder.order_number;
 
-        // If deposit entered for new order, record payment
-        if (info.paidAmount > 0) {
-          await supabase.from('order_payments').insert({
+        // If deposit entered for new order, record payment transaction with valid payment_date
+        if (depositAmount > 0) {
+          const { error: payErr } = await supabase.from('order_payments').insert({
             order_id: newOrder.id,
-            amount: info.paidAmount,
+            amount: depositAmount,
+            payment_date: todayIso,
             notes: `Acompte versé à la commande (${newOrder.order_number || orderNumToSave})`,
             status: 'successful'
           });
+          if (payErr) {
+            console.error('Error inserting initial deposit payment:', payErr);
+          }
         }
       }
 

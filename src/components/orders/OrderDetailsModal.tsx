@@ -80,11 +80,35 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           .select('*, door_products (*)')
           .eq('order_id', order!.id);
 
-        const { data: paymentsData } = await supabase
+        let { data: paymentsData } = await supabase
           .from('order_payments')
           .select('*')
           .eq('order_id', order!.id)
           .order('payment_date', { ascending: false });
+
+        // Auto-heal / backfill: If order has paid_amount > 0 but no payments exist in order_payments,
+        // create the missing initial deposit transaction so it immediately displays and is stored.
+        const paidAmountNum = Number(order!.paid_amount) || 0;
+        const activePayments = (paymentsData || []).filter(p => p.status !== 'voided');
+        if (activePayments.length === 0 && paidAmountNum > 0) {
+          const dateCreated = order!.created_at ? order!.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+          const { data: insertedPayment, error: insertErr } = await supabase
+            .from('order_payments')
+            .insert({
+              order_id: order!.id,
+              amount: paidAmountNum,
+              payment_date: dateCreated,
+              notes: `Acompte initial versé à la commande (${order!.order_number})`,
+              status: 'successful'
+            })
+            .select()
+            .single();
+
+          if (!insertErr && insertedPayment) {
+            paymentsData = [insertedPayment, ...(paymentsData || [])];
+            onRefreshOrder();
+          }
+        }
 
         setItems(itemsData || []);
         setPayments(paymentsData || []);
@@ -119,12 +143,23 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const handleVoidPayment = async (paymentId: string) => {
     if (!confirm(t('orderPayments.confirmVoid', 'Voulez-vous annuler (void) cette transaction de paiement ?'))) return;
     try {
+      const paymentToVoid = payments.find(p => p.id === paymentId);
       const { error } = await supabase
         .from('order_payments')
         .update({ status: 'voided' })
         .eq('id', paymentId);
 
       if (error) throw error;
+
+      // Adjust orders.paid_amount if the payment was successful
+      if (paymentToVoid && paymentToVoid.status !== 'voided') {
+        const newPaidAmount = Math.max(0, (Number(order.paid_amount) || 0) - Number(paymentToVoid.amount));
+        await supabase
+          .from('orders')
+          .update({ paid_amount: newPaidAmount, updated_at: new Date().toISOString() })
+          .eq('id', order.id);
+      }
+
       onRefreshOrder();
       // refresh payments
       const { data } = await supabase
