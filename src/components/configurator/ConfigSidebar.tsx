@@ -3,7 +3,7 @@ import { DoorConfigItem, StudioGeneralInfo } from '../../types/configurator';
 import { COLOR_CATALOG } from '../../data/colors';
 import { PATTERN_CATALOG } from '../../data/patterns';
 import { calculateDoorUnitPrice, calculateDefaultPromoPrice } from '../../utils/pricing';
-import { Client, Order } from '../../types/database';
+import { Client, Order, DoorProduct } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../api/supabase';
 import { 
@@ -35,6 +35,7 @@ interface ConfigSidebarProps {
   info: StudioGeneralInfo;
   clients: Client[];
   orders?: Order[];
+  products?: DoorProduct[];
   onSelectOrderToEdit?: (orderId: string) => void;
   onRefreshClients?: () => void;
   onUpdateInfo: (updates: Partial<StudioGeneralInfo>) => void;
@@ -52,6 +53,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
   info,
   clients,
   orders = [],
+  products = [],
   onSelectOrderToEdit,
   onRefreshClients,
   onUpdateInfo,
@@ -761,6 +763,63 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* WPC Catalog Model & Stock Availability */}
+                {products && products.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="block text-[10px] font-semibold text-slate-400 uppercase">
+                        {t('config.productModel', 'Modèle Catalogue WPC')}
+                      </label>
+                      {(() => {
+                        const matched = products.find(p => p.id === door.productId || (door.productReference && p.reference === door.productReference));
+                        if (!matched) return null;
+                        const stock = matched.stock_quantity ?? 0;
+                        return (
+                          <span className={`text-[9.5px] font-bold font-mono px-1.5 py-0.2 rounded ${
+                            stock > 5 ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' :
+                            stock > 0 ? 'text-amber-700 bg-amber-50 border border-amber-200' :
+                            'text-rose-700 bg-rose-50 border border-rose-200'
+                          }`}>
+                            {stock > 0 ? `${t('config.stockAvailable', 'En stock :')} ${stock}` : t('config.stockDepleted', '⚠️ Rupture')}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <select
+                      value={door.productId || ''}
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const found = products.find(p => p.id === selectedId);
+                        if (found) {
+                          onUpdateDoor(index, {
+                            productId: found.id,
+                            productReference: found.reference,
+                            designation: found.name,
+                            heightCm: Number(found.height) || door.heightCm,
+                            widthCm: Number(found.width) || door.widthCm
+                          });
+                        } else {
+                          onUpdateDoor(index, {
+                            productId: undefined,
+                            productReference: undefined
+                          });
+                        }
+                      }}
+                      className="w-full px-2 py-1 text-xs border border-slate-300 rounded font-semibold focus:border-nasaq-teal focus:outline-none bg-white"
+                    >
+                      <option value="">{t('config.customDoor', 'Modèle standard / sur-mesure')}</option>
+                      {products.map(p => {
+                        const s = p.stock_quantity ?? 0;
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {p.reference} — {p.name} ({s > 0 ? `Stock: ${s}` : 'Rupture'})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                )}
 
                 {/* Designation */}
                 <div>

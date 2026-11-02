@@ -52,6 +52,7 @@ export interface DoorProduct {
   thickness: number;
   description?: string | null;
   drawing_url?: string | null;
+  stock_quantity?: number;
   created_at?: string;
 }
 
@@ -94,6 +95,8 @@ export interface GlassPane {
 
 export interface DoorItemConfig {
   id?: string;
+  productId?: string;
+  productReference?: string;
   doorStructure: 'single' | 'double';
   leftLeafPercent?: number;
   hasRevetment: boolean;

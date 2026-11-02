@@ -8,7 +8,7 @@ import { InvoiceAtelierSheet } from './InvoiceAtelierSheet';
 import { downloadDossierZIP } from '../../utils/exportUtils';
 import { extractOrderCode, formatDoorId } from '../../utils/formatters';
 import { supabase } from '../../api/supabase';
-import { Client, Order } from '../../types/database';
+import { Client, Order, DoorProduct } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
 import { CheckCircle2, AlertCircle, Sliders, Eye } from 'lucide-react';
 
@@ -30,13 +30,17 @@ const DEFAULT_INFO: StudioGeneralInfo = {
 interface ConfiguratorViewProps {
   onOrderSaved?: () => void;
   orderToEdit?: Order | null;
+  initialProduct?: DoorProduct | null;
   onClearOrderToEdit?: () => void;
+  onClearInitialProduct?: () => void;
 }
 
 export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({ 
   onOrderSaved, 
   orderToEdit,
-  onClearOrderToEdit 
+  initialProduct,
+  onClearOrderToEdit,
+  onClearInitialProduct
 }) => {
   const { t, isRtl } = useLanguage();
   const [activeTab, setActiveTab] = useState<'drawings' | 'normal' | 'promo' | 'atelier'>('drawings');
@@ -82,8 +86,50 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
 
   const [clients, setClients] = useState<Client[]>([]);
   const [dbOrders, setDbOrders] = useState<Order[]>([]);
+  const [productsList, setProductsList] = useState<DoorProduct[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Fetch catalog door products
+  const loadProducts = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('door_products').select('*').order('reference');
+      if (data && !error) setProductsList(data);
+    } catch (err) {
+      console.warn('Could not fetch products from Supabase:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // Handle incoming initialProduct from catalog "Ouvrir dans Studio"
+  useEffect(() => {
+    if (initialProduct) {
+      const code = extractOrderCode(info.orderNumber || info.docRef);
+      const newDoor: DoorConfigItem = {
+        id: formatDoorId(1, code),
+        productId: initialProduct.id,
+        productReference: initialProduct.reference,
+        heightCm: Number(initialProduct.height) || 210,
+        widthCm: Number(initialProduct.width) || 90,
+        designation: initialProduct.name,
+        priceNormal: 39800,
+        pricePromo: 37000,
+        colorId: "chene_bois",
+        patternId: "none",
+        doorStructure: "single",
+        leftLeafPercent: 28,
+        hardwareColor: "black",
+        glassPanes: [],
+        hasRevetment: false,
+        revetmentHeightCm: 110
+      };
+      setDoors([newDoor]);
+      if (onClearInitialProduct) onClearInitialProduct();
+    }
+  }, [initialProduct]);
 
   // Load next DB order sequence number
   const fetchNextOrderNumber = useCallback(async (): Promise<string> => {
@@ -203,6 +249,8 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
         const doorId = cfg.id ? formatDoorId(cfg.id, code) : formatDoorId(idx + 1, code);
         return {
           id: doorId,
+          productId: item.product_id || cfg.productId || item.door_products?.id,
+          productReference: item.door_products?.reference || cfg.productReference,
           heightCm: Number(item.height) || Number(cfg.heightCm) || 210,
           widthCm: Number(item.width) || Number(cfg.widthCm) || 85,
           designation: cfg.designation || item.door_products?.name || "Porte d'intérieur WPC",
@@ -315,11 +363,14 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
   const addDoor = () => {
     const nextNum = doors.length + 1;
     const code = extractOrderCode(info.orderNumber || info.docRef);
+    const defaultProd = productsList.length > 0 ? productsList[0] : null;
     const newDoor: DoorConfigItem = {
       id: formatDoorId(nextNum, code),
-      heightCm: 210,
-      widthCm: 85,
-      designation: "Porte d'intérieur WPC",
+      productId: defaultProd?.id,
+      productReference: defaultProd?.reference,
+      heightCm: Number(defaultProd?.height) || 210,
+      widthCm: Number(defaultProd?.width) || 85,
+      designation: defaultProd?.name || "Porte d'intérieur WPC",
       priceNormal: 39800,
       pricePromo: 37000,
       colorId: "chene_bois",
@@ -519,10 +570,10 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
       setDoors(finalizedDoors);
 
       // Insert updated door items
-      if (defaultProductId && targetOrderId) {
+      if (targetOrderId) {
         const orderItemsPayload = finalizedDoors.map(d => ({
           order_id: targetOrderId,
-          product_id: defaultProductId,
+          product_id: d.productId || defaultProductId,
           quantity: 1,
           unit_price: info.isPromoEnabled ? d.pricePromo : d.priceNormal,
           total_price: info.isPromoEnabled ? d.pricePromo : d.priceNormal,
@@ -632,6 +683,7 @@ export const ConfiguratorView: React.FC<ConfiguratorViewProps> = ({
           info={info}
           clients={clients}
           orders={dbOrders}
+          products={productsList}
           onSelectOrderToEdit={loadOrderForEditing}
           onRefreshClients={loadClients}
           onUpdateInfo={updateInfo}

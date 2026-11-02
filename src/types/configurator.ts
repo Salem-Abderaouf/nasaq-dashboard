@@ -8,6 +8,8 @@ export interface GlassPaneConfig {
 
 export interface DoorConfigItem {
   id: string; // e.g. "P1", "P2"
+  productId?: string;
+  productReference?: string;
   heightCm: number;
   widthCm: number;
   designation: string;

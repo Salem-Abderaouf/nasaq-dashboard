@@ -14,7 +14,7 @@ import { RecordPaymentModal } from './components/orders/RecordPaymentModal';
 import { LoginView } from './components/auth/LoginView';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { Order, Client } from './types/database';
+import { Order, Client, DoorProduct } from './types/database';
 
 const DashboardLayout: React.FC = () => {
   const { user, isAuthenticated, hasPermission } = useAuth();
@@ -25,6 +25,7 @@ const DashboardLayout: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [paymentModalOrder, setPaymentModalOrder] = useState<Order | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<Order | null>(null);
+  const [initialStudioProduct, setInitialStudioProduct] = useState<DoorProduct | null>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   // Auto-redirect if worker lands on or attempts to view a restricted tab
@@ -107,11 +108,14 @@ const DashboardLayout: React.FC = () => {
             <ConfiguratorView 
               onOrderSaved={() => {
                 setOrderToEdit(null);
+                setInitialStudioProduct(null);
                 setOrdersRefreshKey(k => k + 1);
                 setCurrentView('orders');
               }}
               orderToEdit={orderToEdit}
+              initialProduct={initialStudioProduct}
               onClearOrderToEdit={() => setOrderToEdit(null)}
+              onClearInitialProduct={() => setInitialStudioProduct(null)}
             />
           )}
 
@@ -120,6 +124,7 @@ const DashboardLayout: React.FC = () => {
               key={ordersRefreshKey}
               onOpenConfigurator={() => {
                 setOrderToEdit(null);
+                setInitialStudioProduct(null);
                 try {
                   localStorage.removeItem('nasaq_dashboard_info_state');
                   localStorage.removeItem('nasaq_dashboard_doors_state');
@@ -128,6 +133,7 @@ const DashboardLayout: React.FC = () => {
               }}
               onEditOrderInStudio={(order) => {
                 setOrderToEdit(order);
+                setInitialStudioProduct(null);
                 setCurrentView('configurator');
               }}
               onSelectOrder={setSelectedOrder}
@@ -145,8 +151,10 @@ const DashboardLayout: React.FC = () => {
 
           {currentView === 'products' && (
             <ProductsCatalogView 
-              onOpenStudioWithProduct={() => {
+              onOpenStudioWithProduct={(prod) => {
                 if (hasPermission('canCreateOrders')) {
+                  setOrderToEdit(null);
+                  setInitialStudioProduct(prod);
                   setCurrentView('configurator');
                 }
               }} 

@@ -359,8 +359,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             </span>
                             <span className="font-mono text-xs font-bold text-slate-900">{formatMoney(it.unit_price)}</span>
                           </div>
-                          <div className="font-bold text-slate-800 text-xs truncate mt-0.5">
-                            {it.door_products?.name || "Porte d'intérieur WPC"}
+                          <div className="font-bold text-slate-800 text-xs truncate mt-0.5 flex items-center gap-1.5">
+                            {it.door_products?.reference && (
+                              <span className="font-mono text-[10px] font-extrabold bg-nasaq-teal-subtle text-nasaq-teal px-1.5 py-0.2 rounded border border-nasaq-teal/20">
+                                {it.door_products.reference}
+                              </span>
+                            )}
+                            <span className="truncate">{it.door_products?.name || "Porte d'intérieur WPC"}</span>
                           </div>
                           <div className="text-[11px] font-mono text-slate-500 mt-0.5">
                             {it.height} × {it.width} cm • Épaisseur: {it.thickness || 4} cm
