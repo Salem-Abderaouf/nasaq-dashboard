@@ -3,6 +3,7 @@ import { Order } from '../../types/database';
 import { supabase } from '../../api/supabase';
 import { formatMoney } from '../../utils/formatters';
 import { useLanguage } from '../../context/LanguageContext';
+import { recordOrderPayment } from '../../helpers/orders/orderHelpers';
 import { X, CreditCard, CheckCircle2 } from 'lucide-react';
 
 interface RecordPaymentModalProps {
@@ -38,26 +39,13 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const { error: payErr } = await supabase.from('order_payments').insert({
-        order_id: order.id,
+      await recordOrderPayment(supabase, {
+        orderId: order.id,
+        currentPaidAmount: Number(order.paid_amount) || 0,
         amount: numericAmount,
-        payment_date: paymentDate,
-        notes: notes,
-        status: 'successful'
+        paymentDate,
+        notes,
       });
-
-      if (payErr) throw payErr;
-
-      // Keep orders.paid_amount synchronized with new payment
-      const newPaidAmount = (Number(order.paid_amount) || 0) + numericAmount;
-      const { error: ordErr } = await supabase
-        .from('orders')
-        .update({ paid_amount: newPaidAmount, updated_at: new Date().toISOString() })
-        .eq('id', order.id);
-
-      if (ordErr) {
-        console.warn('Error updating order paid_amount after recording payment:', ordErr);
-      }
 
       onSuccess();
       onClose();

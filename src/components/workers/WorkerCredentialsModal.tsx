@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Worker, WorkerAppCredentials, WorkerPermissions } from '../../types/database';
 import { PERMISSION_PRESETS } from '../../types/auth';
-import { AuthService } from '../../services/authService';
 import { useLanguage } from '../../context/LanguageContext';
+import { useWorkerCredentials } from '../../hooks/workers/useWorkerCredentials';
 import { 
   X, 
   Key, 
@@ -31,93 +31,31 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
   onSaved
 }) => {
   const { t } = useLanguage();
-  // Load existing credentials or defaults
-  const existingCreds = AuthService.getWorkerCredentials(worker.email || worker.id);
+  
+  const {
+    enabled,
+    setEnabled,
+    loginEmail,
+    setLoginEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    permissions,
+    selectedPresetId,
+    saving,
+    handleApplyPreset,
+    handleTogglePermission,
+    handleGeneratePassword,
+    handleSubmit
+  } = useWorkerCredentials(worker, onClose, onSaved);
 
-  const [enabled, setEnabled] = useState<boolean>(
-    existingCreds ? existingCreds.app_access_enabled : true
-  );
-
-  const [loginEmail, setLoginEmail] = useState<string>(
-    existingCreds?.login_email || worker.email || `${worker.name.toLowerCase().replace(/\s+/g, '.')}@nasaq.dz`
-  );
-
-  const [password, setPassword] = useState<string>(
-    existingCreds?.password || 'worker123'
-  );
-
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-
-  // Initialize permissions
-  const [permissions, setPermissions] = useState<WorkerPermissions>(() => {
-    if (existingCreds?.permissions) {
-      return existingCreds.permissions;
-    }
-    // Infer default preset based on position
-    const pos = (worker.position || '').toLowerCase();
-    if (pos.includes('commercial') || pos.includes('vente')) {
-      return PERMISSION_PRESETS.find(p => p.id === 'commercial')!.permissions;
-    }
-    if (pos.includes('pose') || pos.includes('install')) {
-      return PERMISSION_PRESETS.find(p => p.id === 'installer')!.permissions;
-    }
-    return PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions;
-  });
-
-  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const handleApplyPreset = (presetId: string) => {
-    const preset = PERMISSION_PRESETS.find(p => p.id === presetId);
-    if (preset) {
-      setPermissions({ ...preset.permissions });
-      setSelectedPresetId(presetId);
-    }
-  };
-
-  const handleTogglePermission = (key: keyof WorkerPermissions) => {
-    setPermissions(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    setSelectedPresetId(null);
-  };
-
-  const handleGeneratePassword = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setPassword(result);
-    setShowPassword(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginEmail.trim()) {
-      alert(t('common.required', 'Veuillez renseigner un email ou identifiant valide.'));
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const updatedCreds: WorkerAppCredentials = {
-        login_email: loginEmail.trim().toLowerCase(),
-        password: password.trim(),
-        app_access_enabled: enabled,
-        permissions: permissions,
-        last_login: existingCreds?.last_login || null
-      };
-
-      AuthService.saveWorkerCredentials(worker, updatedCreds);
-      onSaved(updatedCreds);
-      onClose();
-    } catch (err: any) {
-      alert(err.message || t('common.error', 'Erreur lors de l\'enregistrement des accès.'));
-    } finally {
-      setSaving(false);
-    }
+  const onSubmit = (e: React.FormEvent) => {
+    handleSubmit(
+      e,
+      (msg) => alert(t('common.required', msg)),
+      (err) => alert(err || t('common.error', 'Erreur lors de l\'enregistrement des accès.'))
+    );
   };
 
   const permissionList: { key: keyof WorkerPermissions; defaultLabel: string; defaultDesc: string; category: string }[] = [
@@ -221,17 +159,24 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Scrollable Content */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        {/* Modal Form */}
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-5 md:p-6 space-y-6">
           
-          {/* 1. App Access Toggle */}
-          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex items-center justify-between">
-            <div>
-              <div className="font-bold text-slate-900 text-xs">
-                {t('workers.credsModal.enableToggle', 'Autoriser la connexion à l\'application')}
+          {/* Section 1: Activation Switch */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'}`}>
+                {enabled ? <ShieldCheck className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
               </div>
-              <div className="text-[11px] text-slate-500 mt-0.5">
-                {t('workers.credsModal.enableDesc', 'Si activé, l\'employé peut se connecter avec son email et mot de passe ci-dessous.')}
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">
+                  {t('workers.credsModal.enableAccess', 'Activer la connexion à l\'application')}
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  {enabled 
+                    ? t('workers.credsModal.activeHint', 'Cet artisan peut se connecter avec son email et mot de passe.')
+                    : t('workers.credsModal.disabledHint', 'Accès bloqué : impossible de se connecter à la plateforme.')}
+                </span>
               </div>
             </div>
 
@@ -246,191 +191,189 @@ export const WorkerCredentialsModal: React.FC<WorkerCredentialsModalProps> = ({
             </label>
           </div>
 
-          {enabled ? (
-            <>
-              {/* 2. Login Credentials */}
-              <div className="space-y-3">
-                <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-nasaq-teal" />
-                  {t('workers.credsModal.loginSection', 'Identifiants de Connexion')}
-                </h3>
+          {/* Section 2: Credentials (Email & Password) */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-nasaq-teal" />
+              <span>{t('workers.credsModal.sectionCreds', '1. Identifiants de connexion')}</span>
+            </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-semibold text-slate-600 mb-1">
-                      {t('workers.credsModal.loginEmail', 'Email ou Identifiant de connexion')}
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        required
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="employe@nasaq.dz"
-                        className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-600">
-                        {t('workers.credsModal.password', 'Mot de passe / Code PIN')}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={handleGeneratePassword}
-                        className="text-[10px] text-nasaq-teal hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        <RefreshCw className="w-2.5 h-2.5" />
-                        {t('workers.credsModal.generate', 'Générer')}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-xl font-mono text-xs focus:border-nasaq-teal focus:ring-1 focus:ring-nasaq-teal outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  {t('workers.credsModal.loginEmail', 'Email / Identifiant de connexion')}
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="nom.prenom@nasaq.dz"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:border-nasaq-teal focus:bg-white transition"
+                  />
                 </div>
               </div>
 
-              {/* 3. Permission Presets */}
-              <div className="space-y-3 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-nasaq-gold" />
-                    {t('workers.credsModal.presetsSection', 'Profils Prédéfinis (1 Clic)')}
-                  </h3>
-                  <span className="text-[10.5px] text-slate-400">
-                    {t('workers.credsModal.presetsDesc', 'Cliquez pour appliquer un jeu de droits adapté')}
-                  </span>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    {t('workers.credsModal.password', 'Mot de passe')}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="text-[11px] font-bold text-nasaq-teal hover:text-nasaq-teal-dark flex items-center gap-1 transition"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>{t('workers.credsModal.generate', 'Générer (6 car.)')}</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {PERMISSION_PRESETS.map((p) => {
-                    const isSelected = selectedPresetId === p.id;
-                    const pLabel = t(`workers.preset.${p.id}`, p.label);
-                    const pDesc = t(`workers.presetDesc.${p.id}`, p.description);
-
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleApplyPreset(p.id)}
-                        className={`p-2.5 rounded-xl border text-left transition ${
-                          isSelected
-                            ? 'border-nasaq-teal bg-nasaq-teal text-white shadow-xs'
-                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div className="font-bold text-[11px] truncate">{pLabel}</div>
-                        <div className={`text-[9.5px] mt-0.5 line-clamp-1 ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>
-                          {pDesc}
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Mot de passe secret"
+                    className="w-full pl-3 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold tracking-wider text-slate-800 focus:outline-none focus:border-nasaq-teal focus:bg-white transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 p-0.5 rounded transition"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
-
-              {/* 4. Granular Permissions Checklist */}
-              <div className="space-y-3 pt-2 border-t border-slate-100">
-                <h3 className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-nasaq-teal" />
-                  {t('workers.credsModal.granularSection', 'Détail des Droits d\'Accès Accordés')}
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
-                  {permissionList.map((item) => {
-                    const isGranted = permissions[item.key];
-                    const isSensitive = item.key === 'canAccessPayroll' || item.key === 'canViewFinancials';
-                    const permLabel = t(`workers.perm.${item.key}`, item.defaultLabel);
-                    const permDesc = t(`workers.permDesc.${item.key}`, item.defaultDesc);
-
-                    return (
-                      <label
-                        key={item.key}
-                        className={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition select-none ${
-                          isGranted
-                            ? isSensitive 
-                              ? 'border-amber-300 bg-amber-50/60' 
-                              : 'border-nasaq-teal/40 bg-nasaq-teal-subtle/40'
-                            : 'border-slate-200 bg-white hover:bg-slate-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isGranted}
-                          onChange={() => handleTogglePermission(item.key)}
-                          className="mt-0.5 rounded text-nasaq-teal focus:ring-nasaq-teal h-4 w-4 shrink-0"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className={`font-bold text-[11px] ${isGranted ? 'text-slate-900' : 'text-slate-600'}`}>
-                              {permLabel}
-                            </span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
-                              {item.category}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-                            {permDesc}
-                          </p>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-slate-500 space-y-2">
-              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <div className="font-bold text-slate-800 text-sm">
-                {t('workers.credsModal.disabledWarning', 'Accès Application Désactivé')}
-              </div>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                {t('workers.credsModal.disabledDesc', 'Cet employé n\'a pas accès à la plateforme. Pour lui attribuer un accès sécurisé, activez l\'interrupteur ci-dessus.')}
-              </p>
             </div>
-          )}
-
-          {/* Modal Footer */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition font-bold"
-            >
-              {t('common.cancel', 'Annuler')}
-            </button>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-5 py-2 rounded-xl bg-nasaq-teal hover:bg-nasaq-teal-dark text-white font-bold transition flex items-center gap-2 shadow-xs disabled:opacity-50"
-            >
-              <Check className="w-4 h-4" />
-              <span>{saving ? t('workers.modal.saving', 'Enregistrement...') : t('workers.credsModal.save', 'Enregistrer les Accès')}</span>
-            </button>
           </div>
 
+          {/* Section 3: Permission Presets */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-nasaq-teal" />
+              <span>{t('workers.credsModal.sectionPresets', '2. Profils types de permissions')}</span>
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              {PERMISSION_PRESETS.map(preset => {
+                const isSelected = selectedPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleApplyPreset(preset.id)}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      isSelected 
+                        ? 'bg-nasaq-teal/10 border-nasaq-teal text-nasaq-teal shadow-xs' 
+                        : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs">{t(`auth.preset.${preset.id}`, preset.label)}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-nasaq-teal" />}
+                    </div>
+                    <p className="text-[10.5px] text-slate-500 leading-snug line-clamp-2">
+                      {t(`auth.presetDesc.${preset.id}`, preset.description)}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 4: Granular Permissions Checklist */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-nasaq-teal" />
+                <span>{t('workers.credsModal.sectionGranular', '3. Droits granulaires détaillés')}</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {Object.values(permissions).filter(Boolean).length} / {permissionList.length} {t('workers.credsModal.active', 'actifs')}
+              </span>
+            </h3>
+
+            <div className="border border-slate-200 rounded-2xl divide-y divide-slate-100 overflow-hidden bg-white">
+              {permissionList.map(item => {
+                const isChecked = !!permissions[item.key];
+                return (
+                  <label
+                    key={item.key}
+                    className="p-3.5 flex items-start gap-3 hover:bg-slate-50/80 cursor-pointer transition select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleTogglePermission(item.key)}
+                      className="mt-0.5 rounded border-slate-300 text-nasaq-teal focus:ring-nasaq-teal h-4 w-4 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">
+                          {t(`workers.perm.${item.key}`, item.defaultLabel)}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
+                          {item.category}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        {t(`workers.permDesc.${item.key}`, item.defaultDesc)}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Warning for sensitive permissions */}
+          {permissions.canViewFinancials && (
+            <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-2.5 text-amber-800 text-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold">{t('workers.credsModal.warnFinancials', 'Attention : Données financières autorisées')}</strong>
+                <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+                  {t('workers.credsModal.warnFinancialsDesc', 'Cet utilisateur aura accès aux prix de vente en DZD, factures et remises client accordées.')}
+                </p>
+              </div>
+            </div>
+          )}
         </form>
+
+        {/* Modal Footer */}
+        <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200/60 transition"
+          >
+            {t('common.cancel', 'Annuler')}
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={saving}
+            className="px-5 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark active:scale-[0.99] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
+          >
+            {saving ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>{t('common.saving', 'Enregistrement...')}</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>{t('workers.credsModal.saveBtn', 'Enregistrer les accès')}</span>
+              </>
+            )}
+          </button>
+        </div>
 
       </div>
     </div>

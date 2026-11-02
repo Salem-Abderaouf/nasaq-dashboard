@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../api/supabase';
+import React, { useState } from 'react';
 import { Order, OrderStatus } from '../../types/database';
 import { formatMoney, formatDate, getOrderStatusMeta, getPaymentBadge } from '../../utils/formatters';
 import { 
@@ -21,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useOrdersList } from '../../hooks/orders/useOrdersList';
+import { PaymentFilterType } from '../../helpers/orders/orderHelpers';
 import { OrderPaymentsHistoryModal } from './OrderPaymentsHistoryModal';
 
 interface OrdersListViewProps {
@@ -44,119 +45,25 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
   const isAdmin = user?.role === 'admin';
   const canDeleteOrders = isAdmin || canCreateOrders;
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [paymentFilter, setPaymentFilter] = useState<string>('all');
+  const {
+    orders,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    paymentFilter,
+    setPaymentFilter,
+    filteredOrders,
+    orderToDelete,
+    setOrderToDelete,
+    deleting,
+    handleDeleteOrder,
+    toastMessage,
+    fetchOrders,
+  } = useOrdersList();
+
   const [selectedOrderForPayments, setSelectedOrderForPayments] = useState<Order | null>(null);
-
-  // Delete Order state
-  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
-    setToastMessage({ text, type });
-    setTimeout(() => setToastMessage(null), 4000);
-  };
-
-  const handleDeleteOrder = async () => {
-    if (!orderToDelete) return;
-    setDeleting(true);
-    try {
-      // 1. Delete associated payments
-      const { error: payErr } = await supabase
-        .from('order_payments')
-        .delete()
-        .eq('order_id', orderToDelete.id);
-      if (payErr) console.warn('Error deleting payments:', payErr);
-
-      // 2. Delete status history
-      const { error: histErr } = await supabase
-        .from('order_status_history')
-        .delete()
-        .eq('order_id', orderToDelete.id);
-      if (histErr) console.warn('Error deleting history:', histErr);
-
-      // 3. Delete order items
-      const { error: itemsErr } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderToDelete.id);
-      if (itemsErr) console.warn('Error deleting items:', itemsErr);
-
-      // 4. Delete the order
-      const { error: orderErr } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderToDelete.id);
-      if (orderErr) throw orderErr;
-
-      // 5. Update local state
-      setOrders(prev => prev.filter(o => o.id !== orderToDelete.id));
-      showToast(t('orders.deleteSuccess', `Commande "${orderToDelete.order_number}" supprimée avec succès.`), 'success');
-      setOrderToDelete(null);
-    } catch (err: any) {
-      console.error('Error deleting order:', err);
-      showToast(err.message || t('orders.deleteError', 'Erreur lors de la suppression de la commande.'), 'error');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          clients (name, phone, address),
-          users (name)
-        `)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setOrders(data || []);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  // Filtered orders
-  const filteredOrders = orders.filter(o => {
-    const s = searchTerm.toLowerCase();
-    const matchSearch = 
-      (o.order_number && o.order_number.toLowerCase().includes(s)) ||
-      (o.clients?.name && o.clients.name.toLowerCase().includes(s)) ||
-      (o.clients?.phone && o.clients.phone.includes(s));
-
-    if (!matchSearch) return false;
-
-    if (statusFilter !== 'all' && o.status !== statusFilter) {
-      return false;
-    }
-
-    if (paymentFilter !== 'all') {
-      const isPaid = o.paid_amount >= o.total_amount && o.total_amount > 0;
-      const isPartial = o.paid_amount > 0 && o.paid_amount < o.total_amount;
-      const isUnpaid = o.paid_amount <= 0;
-
-      if (paymentFilter === 'paid' && !isPaid) return false;
-      if (paymentFilter === 'partial' && !isPartial) return false;
-      if (paymentFilter === 'unpaid' && !isUnpaid) return false;
-    }
-
-    return true;
-  });
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
@@ -215,7 +122,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
             <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
               className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal"
             >
               <option value="all">{t('orders.allStatuses', 'Tous les Statuts (9 étapes)')}</option>
@@ -236,7 +143,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
             <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <select
               value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
+              onChange={(e) => setPaymentFilter(e.target.value as PaymentFilterType)}
               className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:outline-none focus:border-nasaq-teal"
             >
               <option value="all">{t('orders.allPayments', 'Tous les Paiements')}</option>
@@ -623,7 +530,7 @@ export const OrdersListView: React.FC<OrdersListViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleDeleteOrder}
+                onClick={() => handleDeleteOrder()}
                 disabled={deleting}
                 className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition text-xs shadow-xs disabled:opacity-50"
               >

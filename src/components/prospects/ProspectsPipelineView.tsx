@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../api/supabase';
+import React from 'react';
 import { Prospect, ProspectStatus } from '../../types/database';
-import { getProspectStatusMeta, formatDate } from '../../utils/formatters';
+import { getProspectStatusMeta } from '../../utils/formatters';
 import { useLanguage } from '../../context/LanguageContext';
+import { PROSPECT_STAGES } from '../../helpers/prospects/prospectHelpers';
+import { useProspectsPipeline } from '../../hooks/prospects/useProspectsPipeline';
 import { 
   TrendingUp, 
   Plus, 
@@ -16,145 +17,57 @@ import {
   Table2
 } from 'lucide-react';
 
-const STAGES: { id: ProspectStatus; defaultLabel: string; color: string; badgeColor: string }[] = [
-  { id: 'new', defaultLabel: '1. Nouveau', color: 'border-blue-300 bg-blue-50/40', badgeColor: 'bg-blue-100 text-blue-800' },
-  { id: 'contacted', defaultLabel: '2. Contacté', color: 'border-purple-300 bg-purple-50/40', badgeColor: 'bg-purple-100 text-purple-800' },
-  { id: 'interested', defaultLabel: '3. Intéressé', color: 'border-amber-300 bg-amber-50/40', badgeColor: 'bg-amber-100 text-amber-800' },
-  { id: 'negotiation', defaultLabel: '4. Négociation', color: 'border-indigo-300 bg-indigo-50/40', badgeColor: 'bg-indigo-100 text-indigo-800' },
-  { id: 'converted', defaultLabel: '5. Converti Client', color: 'border-emerald-300 bg-emerald-50/40', badgeColor: 'bg-emerald-100 text-emerald-800' },
-  { id: 'lost', defaultLabel: '6. Perdu', color: 'border-rose-300 bg-rose-50/40', badgeColor: 'bg-rose-100 text-rose-800' }
-];
-
 export const ProspectsPipelineView: React.FC = () => {
-  const { t, isRtl } = useLanguage();
-  const [prospects, setProspects] = useState<Prospect[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [convertingId, setConvertingId] = useState<string | null>(null);
+  const { t } = useLanguage();
+  
+  const {
+    filteredProspects,
+    loading,
+    search,
+    setSearch,
+    viewMode,
+    setViewMode,
+    isAddModalOpen,
+    setIsAddModalOpen,
+    convertingId,
+    fetchProspects,
+    name,
+    setName,
+    phone,
+    setPhone,
+    address,
+    setAddress,
+    notes,
+    setNotes,
+    status,
+    setStatus,
+    submitting,
+    handleCreateProspect,
+    handleUpdateStatus,
+    handleConvert
+  } = useProspectsPipeline();
 
-  // New form
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
-  const [status, setStatus] = useState<ProspectStatus>('new');
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchProspects = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('prospects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProspects(data || []);
-    } catch (err) {
-      console.error('Error fetching prospects:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProspects();
-  }, []);
-
-  const handleUpdateStatus = async (id: string, newStatus: ProspectStatus) => {
-    try {
-      const { error } = await supabase
-        .from('prospects')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-      setProspects(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
-    } catch (err) {
-      console.error('Error updating prospect status:', err);
-      alert(t('prospects.updateError', 'Erreur lors de la mise à jour du prospect.'));
-    }
-  };
-
-  // Convert Prospect to Client (section 4.3 of business.md)
-  const handleConvert = async (prospect: Prospect) => {
+  const onConvert = (prospect: Prospect) => {
     const confirmMsg = t('prospects.confirmConvert', 'Convertir le prospect "{name}" en client formel ?').replace('{name}', prospect.name);
     if (!confirm(confirmMsg)) return;
 
-    setConvertingId(prospect.id);
-    try {
-      // 1. Insert into clients
-      const { error: clientErr } = await supabase.from('clients').insert({
-        name: prospect.name,
-        phone: prospect.phone,
-        address: prospect.address || null,
-        notes: prospect.notes ? `Converti depuis prospect. Notes: ${prospect.notes}` : 'Converti depuis prospect.'
-      });
-
-      if (clientErr) throw clientErr;
-
-      // 2. Update status to converted
-      await handleUpdateStatus(prospect.id, 'converted');
-      const successMsg = t('prospects.convertSuccess', 'Prospect "{name}" converti avec succès dans le répertoire des clients !').replace('{name}', prospect.name);
-      alert(successMsg);
-    } catch (err: any) {
-      console.error('Error converting prospect:', err);
-      alert(err.message || t('common.error', 'Erreur'));
-    } finally {
-      setConvertingId(null);
-    }
-  };
-
-  const handleCreateProspect = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim()) {
-      alert(t('prospects.createError', 'Nom et téléphone requis.'));
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase
-        .from('prospects')
-        .insert({
-          name: name.trim(),
-          phone: phone.trim(),
-          address: address.trim() || null,
-          notes: notes.trim() || null,
-          status: status
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setProspects(prev => [data, ...prev]);
-      setIsAddModalOpen(false);
-      setName('');
-      setPhone('');
-      setAddress('');
-      setNotes('');
-      setStatus('new');
-    } catch (err: any) {
-      console.error('Error creating prospect:', err);
-      alert(err.message || t('prospects.createError', 'Erreur lors de la création du prospect.'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Search filter
-  const filteredProspects = prospects.filter(p => {
-    if (!search.trim()) return true;
-    const s = search.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(s) ||
-      p.phone.includes(s) ||
-      (p.address && p.address.toLowerCase().includes(s)) ||
-      (p.notes && p.notes.toLowerCase().includes(s))
+    handleConvert(
+      prospect,
+      () => {
+        const successMsg = t('prospects.convertSuccess', 'Prospect "{name}" converti avec succès dans le répertoire des clients !').replace('{name}', prospect.name);
+        alert(successMsg);
+      },
+      (err) => alert(err || t('common.error', 'Erreur'))
     );
-  });
+  };
+
+  const onSubmitNew = (e: React.FormEvent) => {
+    handleCreateProspect(
+      e,
+      undefined,
+      (err) => alert(t('prospects.createError', err))
+    );
+  };
 
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-5">
@@ -239,7 +152,7 @@ export const ProspectsPipelineView: React.FC = () => {
       {viewMode === 'kanban' ? (
         <div className="w-full overflow-x-auto pb-6">
           <div className="flex gap-4 items-start w-max min-w-full">
-            {STAGES.map(stage => {
+            {PROSPECT_STAGES.map(stage => {
               const stageProspects = filteredProspects.filter(p => p.status === stage.id);
               const stageLabel = t(`prospects.status.${stage.id}`, stage.defaultLabel);
 
@@ -307,7 +220,7 @@ export const ProspectsPipelineView: React.FC = () => {
                             {p.status !== 'converted' ? (
                               <button
                                 type="button"
-                                onClick={() => handleConvert(p)}
+                                onClick={() => onConvert(p)}
                                 disabled={convertingId === p.id}
                                 className="text-[10.5px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs disabled:opacity-50"
                                 title={t('prospects.convertToClient', 'Convertir en client formel')}
@@ -379,7 +292,7 @@ export const ProspectsPipelineView: React.FC = () => {
                           {p.status !== 'converted' ? (
                             <button
                               type="button"
-                              onClick={() => handleConvert(p)}
+                              onClick={() => onConvert(p)}
                               disabled={convertingId === p.id}
                               className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg transition inline-flex items-center gap-1"
                             >
@@ -418,7 +331,7 @@ export const ProspectsPipelineView: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateProspect} className="p-5 space-y-3.5 text-xs">
+            <form onSubmit={onSubmitNew} className="p-5 space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-600 mb-1">{t('prospects.modal.name', 'Nom / Contact *')}</label>
                 <input 

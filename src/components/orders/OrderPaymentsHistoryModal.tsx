@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Order, OrderPayment } from '../../types/database';
-import { supabase } from '../../api/supabase';
+import React from 'react';
+import { Order } from '../../types/database';
 import { formatMoney, formatDate, getPaymentBadge } from '../../utils/formatters';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useOrderPayments } from '../../hooks/orders/useOrderPayments';
 import { 
   X, 
   ReceiptText, 
@@ -33,95 +33,22 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
   const isAdmin = user?.role === 'admin';
   const canRecordPayments = hasPermission('canRecordPayments');
 
-  const [payments, setPayments] = useState<OrderPayment[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [currentOrder, setCurrentOrder] = useState<Order>(order);
+  const {
+    payments,
+    loading,
+    currentOrder,
+    fetchPayments,
+    handleVoidPayment,
+  } = useOrderPayments({
+    order,
+    onRefreshOrders,
+  });
 
-  const fetchPayments = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch updated order state
-      const { data: ordData } = await supabase
-        .from('orders')
-        .select('*, clients (name, phone, address)')
-        .eq('id', order.id)
-        .single();
-
-      if (ordData) setCurrentOrder(ordData);
-
-      // 2. Fetch payments history
-      let { data, error } = await supabase
-        .from('order_payments')
-        .select('*')
-        .eq('order_id', order.id)
-        .order('payment_date', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Auto-heal / backfill check: if order has paid_amount > 0 but no payments exist, insert initial deposit
-      const currentPaidAmount = Number(ordData ? ordData.paid_amount : order.paid_amount) || 0;
-      const activePayments = (data || []).filter(p => p.status !== 'voided');
-      if (activePayments.length === 0 && currentPaidAmount > 0) {
-        const orderCreatedAt = (ordData || order).created_at;
-        const dateCreated = orderCreatedAt ? orderCreatedAt.split('T')[0] : new Date().toISOString().split('T')[0];
-        const orderNum = (ordData || order).order_number || '';
-        const { data: insertedPayment, error: insertErr } = await supabase
-          .from('order_payments')
-          .insert({
-            order_id: order.id,
-            amount: currentPaidAmount,
-            payment_date: dateCreated,
-            notes: `Acompte initial versé à la commande (${orderNum})`,
-            status: 'successful'
-          })
-          .select()
-          .single();
-
-        if (!insertErr && insertedPayment) {
-          data = [insertedPayment, ...(data || [])];
-          if (onRefreshOrders) onRefreshOrders();
-        }
-      }
-
-      setPayments(data || []);
-    } catch (err) {
-      console.error('Error fetching order payments:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPayments();
-  }, [order.id]);
-
-  const handleVoidPayment = async (paymentId: string) => {
+  const onConfirmVoid = async (paymentId: string) => {
     if (!confirm(t('orderPayments.confirmVoid', 'Are you sure you want to void this transaction?'))) return;
-
-    try {
-      const paymentToVoid = payments.find(p => p.id === paymentId);
-      const { error } = await supabase
-        .from('order_payments')
-        .update({ status: 'voided' })
-        .eq('id', paymentId);
-
-      if (error) throw error;
-
-      // Adjust orders.paid_amount if the payment was successful
-      if (paymentToVoid && paymentToVoid.status !== 'voided') {
-        const newPaidAmount = Math.max(0, (Number(currentOrder.paid_amount) || 0) - Number(paymentToVoid.amount));
-        await supabase
-          .from('orders')
-          .update({ paid_amount: newPaidAmount, updated_at: new Date().toISOString() })
-          .eq('id', currentOrder.id);
-      }
-
-      await fetchPayments();
-      if (onRefreshOrders) onRefreshOrders();
-    } catch (err: any) {
-      console.error('Error voiding payment:', err);
-      alert(err.message || t('orderPayments.voidError', 'Error voiding payment.'));
+    const ok = await handleVoidPayment(paymentId);
+    if (!ok) {
+      alert(t('orderPayments.voidError', 'Error voiding payment.'));
     }
   };
 
@@ -320,7 +247,7 @@ export const OrderPaymentsHistoryModal: React.FC<OrderPaymentsHistoryModalProps>
                               {!isVoided ? (
                                 <button
                                   type="button"
-                                  onClick={() => handleVoidPayment(p.id)}
+                                  onClick={() => onConfirmVoid(p.id)}
                                   className="text-[11px] text-rose-600 hover:text-rose-800 hover:underline font-semibold"
                                   title="Void this payment transaction"
                                 >

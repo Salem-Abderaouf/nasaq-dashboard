@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Order, OrderItem, OrderPayment, OrderStatus } from '../../types/database';
-import { supabase } from '../../api/supabase';
+import React from 'react';
+import { Order, OrderStatus } from '../../types/database';
 import { formatMoney, formatDate, getOrderStatusMeta, getPaymentBadge, formatDoorId } from '../../utils/formatters';
 import { DoorElevationSVG } from '../2d/DoorElevationSVG';
 import { DoorConfigItem } from '../../types/configurator';
 import { X, Printer, CheckCircle, Ban, Clock, ShoppingBag, Sliders, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useOrderDetails } from '../../hooks/orders/useOrderDetails';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -36,141 +36,43 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const isAdmin = user?.role === 'admin';
   const canDeleteOrders = isAdmin || canCreateOrders;
 
-  const [items, setItems] = useState<OrderItem[]>([]);
-  const [payments, setPayments] = useState<OrderPayment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const {
+    items,
+    payments,
+    loading,
+    updatingStatus,
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+    deleting,
+    handleStatusChange,
+    handleVoidPayment,
+    handleDeleteOrder,
+  } = useOrderDetails({
+    order,
+    onRefreshOrder,
+    onDeleteOrder,
+    onClose,
+  });
 
-  const handleDeleteOrder = async () => {
-    if (!order) return;
-    setDeleting(true);
-    try {
-      // 1. Delete associated payments
-      await supabase.from('order_payments').delete().eq('order_id', order.id);
-      // 2. Delete status history
-      await supabase.from('order_status_history').delete().eq('order_id', order.id);
-      // 3. Delete order items
-      await supabase.from('order_items').delete().eq('order_id', order.id);
-      // 4. Delete the order
-      const { error } = await supabase.from('orders').delete().eq('id', order.id);
-      if (error) throw error;
-
-      if (onDeleteOrder) {
-        onDeleteOrder(order);
-      }
-      onRefreshOrder();
-      onClose();
-    } catch (err: any) {
-      console.error('Error deleting order:', err);
-      alert(t('orders.deleteError', 'Erreur lors de la suppression de la commande.'));
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  useEffect(() => {
-    async function loadDetails() {
-      setLoading(true);
-      try {
-        const { data: itemsData } = await supabase
-          .from('order_items')
-          .select('*, door_products (*)')
-          .eq('order_id', order!.id);
-
-        let { data: paymentsData } = await supabase
-          .from('order_payments')
-          .select('*')
-          .eq('order_id', order!.id)
-          .order('payment_date', { ascending: false });
-
-        // Auto-heal / backfill: If order has paid_amount > 0 but no payments exist in order_payments,
-        // create the missing initial deposit transaction so it immediately displays and is stored.
-        const paidAmountNum = Number(order!.paid_amount) || 0;
-        const activePayments = (paymentsData || []).filter(p => p.status !== 'voided');
-        if (activePayments.length === 0 && paidAmountNum > 0) {
-          const dateCreated = order!.created_at ? order!.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
-          const { data: insertedPayment, error: insertErr } = await supabase
-            .from('order_payments')
-            .insert({
-              order_id: order!.id,
-              amount: paidAmountNum,
-              payment_date: dateCreated,
-              notes: `Acompte initial versé à la commande (${order!.order_number})`,
-              status: 'successful'
-            })
-            .select()
-            .single();
-
-          if (!insertErr && insertedPayment) {
-            paymentsData = [insertedPayment, ...(paymentsData || [])];
-            onRefreshOrder();
-          }
-        }
-
-        setItems(itemsData || []);
-        setPayments(paymentsData || []);
-      } catch (err) {
-        console.error('Error loading order details:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadDetails();
-  }, [order]);
-
-  const handleStatusChange = async (newStatus: OrderStatus) => {
-    if (!order) return;
-    setUpdatingStatus(true);
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', order.id);
-
-      if (error) throw error;
-      onRefreshOrder();
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert(t('orderModal.updateStatusError', 'Erreur lors de la mise à jour du statut.'));
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
-
-  const handleVoidPayment = async (paymentId: string) => {
+  const onConfirmVoidPayment = async (paymentId: string) => {
     if (!confirm(t('orderPayments.confirmVoid', 'Voulez-vous annuler (void) cette transaction de paiement ?'))) return;
-    try {
-      const paymentToVoid = payments.find(p => p.id === paymentId);
-      const { error } = await supabase
-        .from('order_payments')
-        .update({ status: 'voided' })
-        .eq('id', paymentId);
-
-      if (error) throw error;
-
-      // Adjust orders.paid_amount if the payment was successful
-      if (paymentToVoid && paymentToVoid.status !== 'voided') {
-        const newPaidAmount = Math.max(0, (Number(order.paid_amount) || 0) - Number(paymentToVoid.amount));
-        await supabase
-          .from('orders')
-          .update({ paid_amount: newPaidAmount, updated_at: new Date().toISOString() })
-          .eq('id', order.id);
-      }
-
-      onRefreshOrder();
-      // refresh payments
-      const { data } = await supabase
-        .from('order_payments')
-        .select('*')
-        .eq('order_id', order.id)
-        .order('payment_date', { ascending: false });
-      setPayments(data || []);
-    } catch (err) {
-      console.error('Error voiding payment:', err);
+    const ok = await handleVoidPayment(paymentId);
+    if (!ok) {
       alert(t('orderPayments.voidError', 'Erreur lors de l\'annulation du paiement.'));
+    }
+  };
+
+  const onUpdateOrderStatus = async (newStatus: OrderStatus) => {
+    const ok = await handleStatusChange(newStatus);
+    if (!ok) {
+      alert(t('orderModal.updateStatusError', 'Erreur lors de la mise à jour du statut.'));
+    }
+  };
+
+  const onDeleteWithFeedback = async () => {
+    const ok = await handleDeleteOrder();
+    if (!ok) {
+      alert(t('orders.deleteError', 'Erreur lors de la suppression de la commande.'));
     }
   };
 
@@ -283,7 +185,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               <select
                 value={order.status}
                 disabled={updatingStatus || !canChangeOrderStatus}
-                onChange={(e) => handleStatusChange(e.target.value as OrderStatus)}
+                onChange={(e) => onUpdateOrderStatus(e.target.value as OrderStatus)}
                 className="w-full px-2.5 py-1.5 text-xs font-bold border border-nasaq-teal/40 rounded-lg bg-white text-nasaq-teal-dark focus:outline-none disabled:opacity-60"
                 title={!canChangeOrderStatus ? "Permission de mise à jour des statuts non accordée." : undefined}
               >
@@ -456,7 +358,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                               {!isVoided && isAdmin && (
                                 <button
                                   type="button"
-                                  onClick={() => handleVoidPayment(p.id)}
+                                  onClick={() => onConfirmVoidPayment(p.id)}
                                   className="text-[10px] text-rose-600 hover:text-rose-800 font-semibold"
                                   title={t('orderModal.voidTooltip', 'Annuler cette transaction (Void - Réservé Admin)')}
                                 >
@@ -557,7 +459,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleDeleteOrder}
+                onClick={onDeleteWithFeedback}
                 disabled={deleting}
                 className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold transition text-xs shadow-xs disabled:opacity-50"
               >

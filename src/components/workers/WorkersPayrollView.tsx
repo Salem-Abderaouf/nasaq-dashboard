@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../api/supabase';
-import { Worker, SalaryAdvance, SalaryBonus, SalaryDeduction } from '../../types/database';
+import React from 'react';
 import { formatMoney, formatDate } from '../../utils/formatters';
 import { useLanguage } from '../../context/LanguageContext';
 import { 
-  BadgeDollarSign, 
   Users, 
   Plus, 
   RefreshCw, 
@@ -16,330 +13,98 @@ import {
   Calendar,
   Briefcase,
   Key,
-  Lock,
-  ShieldCheck,
-  Sparkles,
   Trash2,
   AlertTriangle
 } from 'lucide-react';
 import { WorkerCredentialsModal } from './WorkerCredentialsModal';
 import { AuthService } from '../../services/authService';
 import { PERMISSION_PRESETS } from '../../types/auth';
+import { useWorkersPayroll } from '../../hooks/workers/useWorkersPayroll';
 
 export const WorkersPayrollView: React.FC = () => {
   const { t } = useLanguage();
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAddWorkerModalOpen, setIsAddWorkerModalOpen] = useState(false);
-  const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState(false);
-  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+  
+  const {
+    workers,
+    loading,
+    fetchWorkers,
+    selectedWorker,
+    setSelectedWorker,
+    advances,
+    bonuses,
+    deductions,
+    currentBase,
+    totalBonuses,
+    totalDeductions,
+    totalUnsettledAdvances,
+    netSalary,
+    // Adjustments
+    adjustmentModalType,
+    setAdjustmentModalType,
+    adjAmount,
+    setAdjAmount,
+    adjReason,
+    setAdjReason,
+    adjDate,
+    setAdjDate,
+    submittingAdj,
+    handleCreateAdjustment,
+    // New worker form
+    isAddWorkerModalOpen,
+    setIsAddWorkerModalOpen,
+    name,
+    setName,
+    phone,
+    setPhone,
+    position,
+    setPosition,
+    baseSalary,
+    setBaseSalary,
+    paymentDay,
+    setPaymentDay,
+    newLoginEmail,
+    setNewLoginEmail,
+    newPassword,
+    setNewPassword,
+    newAppAccess,
+    setNewAppAccess,
+    newPresetId,
+    setNewPresetId,
+    submittingWorker,
+    handleCreateWorker,
+    // Credentials modal
+    isCredentialsModalOpen,
+    setIsCredentialsModalOpen,
+    // Worker deletion
+    workerToDelete,
+    setWorkerToDelete,
+    deletingWorker,
+    handleDeleteWorker,
+    // Feedback
+    toast,
+    setToast
+  } = useWorkersPayroll();
 
-  // Worker deletion state & notifications
-  const [workerToDelete, setWorkerToDelete] = useState<Worker | null>(null);
-  const [deletingWorker, setDeletingWorker] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
+  const onCreateAdjustment = (e: React.FormEvent) => {
+    handleCreateAdjustment(
+      e,
+      (msg) => alert(t('common.error', msg))
+    );
   };
 
-  // Financial adjustments for selected worker
-  const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
-  const [bonuses, setBonuses] = useState<SalaryBonus[]>([]);
-  const [deductions, setDeductions] = useState<SalaryDeduction[]>([]);
-  const [loadingAdjustments, setLoadingAdjustments] = useState(false);
-
-  // Modals for adding advance / bonus / deduction
-  const [adjustmentModalType, setAdjustmentModalType] = useState<'advance' | 'bonus' | 'deduction' | null>(null);
-  const [adjAmount, setAdjAmount] = useState<number>(5000);
-  const [adjReason, setAdjReason] = useState<string>('');
-  const [adjDate, setAdjDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [submittingAdj, setSubmittingAdj] = useState(false);
-
-  // New worker form
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [position, setPosition] = useState('Menuisier Artisan WPC');
-  const [baseSalary, setBaseSalary] = useState(65000);
-  const [paymentDay, setPaymentDay] = useState(5);
-  const [newLoginEmail, setNewLoginEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('worker123');
-  const [newAppAccess, setNewAppAccess] = useState(true);
-  const [newPresetId, setNewPresetId] = useState('workshop');
-  const [submittingWorker, setSubmittingWorker] = useState(false);
-
-  const fetchWorkers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from('workers').select('*').order('name');
-      if (error) throw error;
-      setWorkers(data || []);
-      if (data && data.length > 0 && !selectedWorker) {
-        setSelectedWorker(data[0]);
-      }
-    } catch (err) {
-      console.error('Error fetching workers:', err);
-    } finally {
-      setLoading(false);
-    }
+  const onCreateWorker = (e: React.FormEvent) => {
+    handleCreateWorker(
+      e,
+      undefined,
+      (msg) => alert(t('common.required', msg))
+    );
   };
 
-  useEffect(() => {
-    fetchWorkers();
-  }, []);
-
-  // Fetch adjustments when selected worker changes
-  useEffect(() => {
-    if (!selectedWorker) return;
-
-    async function loadWorkerFinances() {
-      setLoadingAdjustments(true);
-      try {
-        const { data: adv } = await supabase
-          .from('salary_advances')
-          .select('*')
-          .eq('worker_id', selectedWorker!.id)
-          .order('date', { ascending: false });
-
-        const { data: bon } = await supabase
-          .from('salary_bonuses')
-          .select('*')
-          .eq('worker_id', selectedWorker!.id)
-          .order('date', { ascending: false });
-
-        const { data: ded } = await supabase
-          .from('salary_deductions')
-          .select('*')
-          .eq('worker_id', selectedWorker!.id)
-          .order('date', { ascending: false });
-
-        setAdvances(adv || []);
-        setBonuses(bon || []);
-        setDeductions(ded || []);
-      } catch (err) {
-        console.error('Error fetching worker adjustments:', err);
-      } finally {
-        setLoadingAdjustments(false);
-      }
-    }
-
-    loadWorkerFinances();
-  }, [selectedWorker]);
-
-  // Compute Net Payroll according to Section 7.4 of business.md:
-  // Final Disbursement = max(Base Salary + Bonuses - Deductions - Unsettled Advances, 0)
-  const currentBase = selectedWorker ? Number(selectedWorker.base_salary || 0) : 0;
-  const totalBonuses = bonuses.reduce((acc, b) => acc + Number(b.amount || 0), 0);
-  const totalDeductions = deductions.reduce((acc, d) => acc + Number(d.amount || 0), 0);
-  const totalUnsettledAdvances = advances
-    .filter(a => !a.is_settled)
-    .reduce((acc, a) => acc + Number(a.amount || 0), 0);
-
-  const netSalary = Math.max(0, currentBase + totalBonuses - totalDeductions - totalUnsettledAdvances);
-
-  const handleCreateAdjustment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedWorker || !adjustmentModalType || adjAmount <= 0) return;
-
-    setSubmittingAdj(true);
-    try {
-      if (adjustmentModalType === 'advance') {
-        const { data, error } = await supabase
-          .from('salary_advances')
-          .insert({
-            worker_id: selectedWorker.id,
-            amount: adjAmount,
-            date: adjDate,
-            reason: adjReason.trim() || null,
-            is_settled: false
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setAdvances(prev => [data, ...prev]);
-      } else if (adjustmentModalType === 'bonus') {
-        const { data, error } = await supabase
-          .from('salary_bonuses')
-          .insert({
-            worker_id: selectedWorker.id,
-            amount: adjAmount,
-            date: adjDate,
-            reason: adjReason.trim() || null
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setBonuses(prev => [data, ...prev]);
-      } else if (adjustmentModalType === 'deduction') {
-        const { data, error } = await supabase
-          .from('salary_deductions')
-          .insert({
-            worker_id: selectedWorker.id,
-            amount: adjAmount,
-            date: adjDate,
-            reason: adjReason.trim() || null
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setDeductions(prev => [data, ...prev]);
-      }
-
-      setAdjustmentModalType(null);
-      setAdjAmount(5000);
-      setAdjReason('');
-    } catch (err: any) {
-      console.error('Error saving adjustment:', err);
-      alert(err.message || t('common.error', 'Erreur lors de l\'enregistrement.'));
-    } finally {
-      setSubmittingAdj(false);
-    }
-  };
-
-  const handleCreateWorker = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !phone.trim() || baseSalary <= 0) {
-      alert(t('common.required', 'Veuillez remplir les champs obligatoires.'));
-      return;
-    }
-
-    setSubmittingWorker(true);
-    try {
-      let createdWorker: Worker;
-      const calculatedEmail = newLoginEmail.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@nasaq.dz`;
-
-      const { data, error } = await supabase
-        .from('workers')
-        .insert({
-          name: name.trim(),
-          phone: phone.trim(),
-          email: calculatedEmail,
-          position: position.trim(),
-          base_salary: baseSalary,
-          payment_day: paymentDay,
-          employment_date: new Date().toISOString().split('T')[0],
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (error || !data) {
-        // Fallback for local state when Supabase RLS is on anon
-        createdWorker = {
-          id: `worker-${Date.now()}`,
-          name: name.trim(),
-          phone: phone.trim(),
-          email: calculatedEmail,
-          position: position.trim(),
-          base_salary: baseSalary,
-          payment_day: paymentDay,
-          employment_date: new Date().toISOString().split('T')[0],
-          status: 'active'
-        };
-      } else {
-        createdWorker = data;
-      }
-
-      // Configure initial app credentials and preset permissions
-      const preset = PERMISSION_PRESETS.find(p => p.id === newPresetId) || PERMISSION_PRESETS[0];
-      const initialCreds = {
-        login_email: calculatedEmail.toLowerCase(),
-        password: newPassword.trim() || 'worker123',
-        app_access_enabled: newAppAccess,
-        permissions: preset.permissions
-      };
-      AuthService.saveWorkerCredentials(createdWorker, initialCreds);
-
-      setWorkers(prev => [...prev, createdWorker]);
-      setSelectedWorker(createdWorker);
-      setIsAddWorkerModalOpen(false);
-      setName('');
-      setPhone('');
-      setNewLoginEmail('');
-      setNewPassword('worker123');
-    } catch (err: any) {
-      console.error('Error creating worker:', err);
-      alert(err.message || t('common.error', 'Erreur lors de la création de l\'employé.'));
-    } finally {
-      setSubmittingWorker(false);
-    }
-  };
-
-  const handleDeleteWorker = async () => {
-    if (!workerToDelete) return;
-    setDeletingWorker(true);
-    try {
-      // 1. Delete associated salary advances
-      const { error: advErr } = await supabase
-        .from('salary_advances')
-        .delete()
-        .eq('worker_id', workerToDelete.id);
-      if (advErr) console.warn('Error deleting advances:', advErr);
-
-      // 2. Delete associated salary bonuses
-      const { error: bonErr } = await supabase
-        .from('salary_bonuses')
-        .delete()
-        .eq('worker_id', workerToDelete.id);
-      if (bonErr) console.warn('Error deleting bonuses:', bonErr);
-
-      // 3. Delete associated salary deductions
-      const { error: dedErr } = await supabase
-        .from('salary_deductions')
-        .delete()
-        .eq('worker_id', workerToDelete.id);
-      if (dedErr) console.warn('Error deleting deductions:', dedErr);
-
-      // 4. Delete associated salary payments
-      const { error: payErr } = await supabase
-        .from('salary_payments')
-        .delete()
-        .eq('worker_id', workerToDelete.id);
-      if (payErr) console.warn('Error deleting payments:', payErr);
-
-      // 5. Unlink worker from any orders
-      const { error: ordErr } = await supabase
-        .from('orders')
-        .update({ worker_id: null })
-        .eq('worker_id', workerToDelete.id);
-      if (ordErr) console.warn('Error unlinking orders:', ordErr);
-
-      // 6. Delete the worker record
-      const { error: workerErr } = await supabase
-        .from('workers')
-        .delete()
-        .eq('id', workerToDelete.id);
-      if (workerErr) throw workerErr;
-
-      // 7. Remove credentials from local storage
-      AuthService.deleteWorkerCredentials(workerToDelete);
-
-      // 8. Update UI state
-      const deletedId = workerToDelete.id;
-      const deletedName = workerToDelete.name;
-      setWorkers(prev => {
-        const remaining = prev.filter(w => w.id !== deletedId);
-        if (selectedWorker?.id === deletedId) {
-          setSelectedWorker(remaining.length > 0 ? remaining[0] : null);
-        }
-        return remaining;
-      });
-
-      showToast(
-        t('workers.deleteSuccess', `Employé "${deletedName}" supprimé avec succès.`).replace('{name}', deletedName),
-        'success'
-      );
-      setWorkerToDelete(null);
-    } catch (err: any) {
-      console.error('Error deleting worker:', err);
-      showToast(err.message || t('workers.deleteError', 'Erreur lors de la suppression de l\'employé.'), 'error');
-    } finally {
-      setDeletingWorker(false);
-    }
+  const onDeleteWorker = () => {
+    handleDeleteWorker(
+      t('workers.deleteSuccess', `Employé "{name}" supprimé avec succès.`),
+      t('workers.deleteError', "Erreur lors de la suppression de l'employé.")
+    );
   };
 
   return (
@@ -725,7 +490,7 @@ export const WorkersPayrollView: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateAdjustment} className="p-5 space-y-3 text-xs">
+            <form onSubmit={onCreateAdjustment} className="p-5 space-y-3 text-xs">
               <div>
                 <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.amount', 'Montant (DA) *')}</label>
                 <input 
@@ -797,7 +562,7 @@ export const WorkersPayrollView: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateWorker} className="p-5 space-y-3 text-xs">
+            <form onSubmit={onCreateWorker} className="p-5 space-y-3 text-xs">
               <div>
                 <label className="block font-semibold text-slate-600 mb-1">{t('workers.modal.fullName', 'Nom Complet *')}</label>
                 <input 
@@ -947,8 +712,7 @@ export const WorkersPayrollView: React.FC = () => {
           worker={selectedWorker}
           onClose={() => setIsCredentialsModalOpen(false)}
           onSaved={() => {
-            // Trigger state update
-            setWorkers(prev => [...prev]);
+            fetchWorkers();
           }}
         />
       )}
@@ -1017,7 +781,7 @@ export const WorkersPayrollView: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={handleDeleteWorker}
+                onClick={onDeleteWorker}
                 disabled={deletingWorker}
                 className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white rounded-xl font-bold transition text-xs shadow-xs disabled:opacity-50"
               >

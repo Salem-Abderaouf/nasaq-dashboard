@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../api/supabase';
-import { Order, OrderStatus } from '../../types/database';
+import React from 'react';
+import { Order } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
 import { MetricsGrid } from './MetricsGrid';
 import { PipelineDistribution } from './PipelineDistribution';
@@ -8,6 +7,7 @@ import { RecentOrdersTable } from './RecentOrdersTable';
 import { TopDoorsLeaderboard } from './TopDoorsLeaderboard';
 import { NavView } from '../layout/Sidebar';
 import { RefreshCw, Plus } from 'lucide-react';
+import { useDashboardMetrics } from '../../hooks/dashboard/useDashboardMetrics';
 
 interface DashboardViewProps {
   onNavigate: (view: NavView) => void;
@@ -21,125 +21,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onRecordPayment
 }) => {
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [clientsCount, setClientsCount] = useState(0);
-  const [prospectsCount, setProspectsCount] = useState(0);
-  const [workersCount, setWorkersCount] = useState(0);
-  const [topDoors, setTopDoors] = useState<any[]>([]);
+  
+  const {
+    loading,
+    orders,
+    clientsCount,
+    prospectsCount,
+    workersCount,
+    topDoors,
+    financials,
+    fetchDashboardData
+  } = useDashboardMetrics();
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      // 1. Fetch Orders with clients and items
-      const { data: ordersData, error: ordersErr } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          clients (name, phone, address),
-          users (name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (ordersErr) console.warn('Fetch orders error:', ordersErr);
-      setOrders(ordersData || []);
-
-      // 2. Fetch clients count
-      const { count: cCount } = await supabase
-        .from('clients')
-        .select('*', { count: 'exact', head: true });
-      setClientsCount(cCount || 0);
-
-      // 3. Fetch prospects count
-      const { count: pCount } = await supabase
-        .from('prospects')
-        .select('*', { count: 'exact', head: true });
-      setProspectsCount(pCount || 0);
-
-      // 4. Fetch workers count
-      const { count: wCount } = await supabase
-        .from('workers')
-        .select('*', { count: 'exact', head: true });
-      setWorkersCount(wCount || 0);
-
-      // 5. Fetch items for top doors
-      const { data: itemsData } = await supabase
-        .from('order_items')
-        .select(`
-          product_id,
-          quantity,
-          total_price,
-          door_products (reference, name, category)
-        `);
-
-      if (itemsData && itemsData.length > 0) {
-        const stats: Record<string, any> = {};
-        itemsData.forEach((it: any) => {
-          const prod = it.door_products;
-          const key = it.product_id || prod?.reference || 'Unknown';
-          if (!stats[key]) {
-            stats[key] = {
-              reference: prod?.reference || 'WPC',
-              name: prod?.name || 'Modèle Personnalisé',
-              category: prod?.category || 'Porte WPC',
-              quantity: 0,
-              revenue: 0
-            };
-          }
-          stats[key].quantity += Number(it.quantity || 1);
-          stats[key].revenue += Number(it.total_price || 0);
-        });
-
-        const sorted = Object.values(stats).sort((a: any, b: any) => b.quantity - a.quantity);
-        setTopDoors(sorted);
-      }
-    } catch (err) {
-      console.error('Error loading dashboard stats:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  // Compute live aggregates from orders
-  const totalOrdersCount = orders.length;
-  let totalOrdersValue = 0;
-  let totalPaidCash = 0;
-  let realizedRevenue = 0;
-  let outstandingDebt = 0;
-
-  const statusCounts: Record<OrderStatus, number> = {
-    draft: 0,
-    confirmed: 0,
-    manufacturing: 0,
-    ready_for_dispatch: 0,
-    in_transit: 0,
-    delivered: 0,
-    installation: 0,
-    completed: 0,
-    cancelled: 0
-  };
-
-  orders.forEach(o => {
-    const tot = Number(o.total_amount) || 0;
-    const paid = Number(o.paid_amount) || 0;
-    totalOrdersValue += tot;
-    totalPaidCash += paid;
-
-    if (['delivered', 'installation', 'completed'].includes(o.status)) {
-      realizedRevenue += tot;
-    }
-    if (o.status !== 'cancelled' && tot > paid) {
-      outstandingDebt += (tot - paid);
-    }
-
-    if (statusCounts[o.status] !== undefined) {
-      statusCounts[o.status] += 1;
-    }
-  });
+  const {
+    totalOrdersCount,
+    totalOrdersValue,
+    totalPaidCash,
+    realizedRevenue,
+    outstandingDebt,
+    statusCounts
+  } = financials;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">

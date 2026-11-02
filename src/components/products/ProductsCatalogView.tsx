@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../../api/supabase';
+import React from 'react';
 import { DoorProduct, DoorCategory } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
+import { useProductsCatalog } from '../../hooks/products/useProductsCatalog';
 import { 
   Layers, 
   Search, 
@@ -18,16 +18,12 @@ import {
   Pencil, 
   Trash2, 
   Boxes, 
-  Check,
-  TrendingUp
+  Check 
 } from 'lucide-react';
-import { SAMPLE_PRODUCTS } from '../../data/sampleData';
 
 interface ProductsCatalogViewProps {
   onOpenStudioWithProduct?: (prod: DoorProduct) => void;
 }
-
-type StockFilterType = 'All' | 'in_stock' | 'low_stock' | 'out_of_stock';
 
 export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
   onOpenStudioWithProduct
@@ -37,284 +33,52 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
   const isAdmin = user?.role === 'admin';
   const canManageProducts = isAdmin || hasPermission('canCreateOrders');
 
-  const [products, setProducts] = useState<DoorProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [stockFilter, setStockFilter] = useState<StockFilterType>('All');
+  const {
+    products,
+    loading,
+    search,
+    setSearch,
+    categoryFilter,
+    setCategoryFilter,
+    stockFilter,
+    setStockFilter,
+    filteredProducts,
+    stats,
 
-  // Modals
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<DoorProduct | null>(null);
-  const [stockAdjustProduct, setStockAdjustProduct] = useState<DoorProduct | null>(null);
+    isAddModalOpen,
+    setIsAddModalOpen,
+    editingProduct,
+    setEditingProduct,
+    stockAdjustProduct,
+    setStockAdjustProduct,
 
-  // New product form
-  const [ref, setRef] = useState('');
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState<DoorCategory>('Bedroom');
-  const [height, setHeight] = useState(210);
-  const [width, setWidth] = useState(90);
-  const [thickness, setThickness] = useState(4);
-  const [initialStock, setInitialStock] = useState<number>(0);
-  const [desc, setDesc] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+    addForm,
+    editForm,
+    stockAdjustForm,
 
-  // Stock Adjust form
-  const [adjustMode, setAdjustMode] = useState<'add' | 'set'>('add');
-  const [adjustQuantity, setAdjustQuantity] = useState<number>(10);
-  const [adjusting, setAdjusting] = useState(false);
+    fetchProducts,
+    handleCreateProduct,
+    openEditModal,
+    handleUpdateProduct,
+    handleQuickAdjustStock,
+    openStockModal,
+    handleApplyStockAdjustment,
+    handleDeleteProduct,
+    handleSeedStandardProducts,
+  } = useProductsCatalog();
 
-  // Edit product form
-  const [editRef, setEditRef] = useState('');
-  const [editName, setEditName] = useState('');
-  const [editCategory, setEditCategory] = useState<DoorCategory>('Bedroom');
-  const [editHeight, setEditHeight] = useState(210);
-  const [editWidth, setEditWidth] = useState(90);
-  const [editThickness, setEditThickness] = useState(4);
-  const [editStock, setEditStock] = useState<number>(0);
-  const [editDesc, setEditDesc] = useState('');
-  const [savingEdit, setSavingEdit] = useState(false);
-
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('door_products')
-        .select('*')
-        .order('reference');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-    } finally {
-      setLoading(false);
+  const handleSeedWithFeedback = async () => {
+    const success = await handleSeedStandardProducts();
+    if (success) {
+      alert(t('products.seedSuccess', 'Catalogue initialisé avec les modèles de référence WPC et stocks !'));
     }
   };
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // Filtered products list
-  const filteredProducts = useMemo(() => {
-    return products.filter(prod => {
-      // Search
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const matchRef = prod.reference.toLowerCase().includes(q);
-        const matchName = prod.name.toLowerCase().includes(q);
-        const matchDesc = prod.description?.toLowerCase().includes(q);
-        if (!matchRef && !matchName && !matchDesc) return false;
-      }
-      // Category
-      if (categoryFilter !== 'All' && prod.category !== categoryFilter) {
-        return false;
-      }
-      // Stock
-      const stock = prod.stock_quantity ?? 0;
-      if (stockFilter === 'in_stock' && stock <= 0) return false;
-      if (stockFilter === 'low_stock' && (stock <= 0 || stock > 5)) return false;
-      if (stockFilter === 'out_of_stock' && stock > 0) return false;
-
-      return true;
-    });
-  }, [products, search, categoryFilter, stockFilter]);
-
-  // Overall Inventory Stats
-  const totalModels = products.length;
-  const totalStockUnits = useMemo(() => {
-    return products.reduce((acc, p) => acc + (p.stock_quantity ?? 0), 0);
-  }, [products]);
-  const inStockCount = useMemo(() => {
-    return products.filter(p => (p.stock_quantity ?? 0) > 0).length;
-  }, [products]);
-  const lowStockCount = useMemo(() => {
-    return products.filter(p => (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) <= 5).length;
-  }, [products]);
-  const outOfStockCount = useMemo(() => {
-    return products.filter(p => (p.stock_quantity ?? 0) <= 0).length;
-  }, [products]);
-
-  // Create Product
-  const handleCreateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ref.trim() || !name.trim()) {
-      alert(t('common.required', 'Référence et nom requis.'));
+  const handleDeleteWithConfirm = async (prod: DoorProduct) => {
+    if (!confirm(t('products.confirmDelete', 'Êtes-vous sûr de vouloir supprimer ce modèle du catalogue ?'))) {
       return;
     }
-
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase
-        .from('door_products')
-        .insert({
-          reference: ref.trim().toUpperCase(),
-          name: name.trim(),
-          category: category,
-          height: height,
-          width: width,
-          thickness: thickness,
-          stock_quantity: Math.max(0, initialStock || 0),
-          description: desc.trim() || null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setProducts(prev => [...prev, data]);
-      setIsAddModalOpen(false);
-      setRef('');
-      setName('');
-      setInitialStock(0);
-      setDesc('');
-    } catch (err: any) {
-      console.error('Error creating product:', err);
-      alert(err.message || t('common.error', 'Erreur lors de la création du modèle.'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Open Edit Modal
-  const openEditModal = (prod: DoorProduct) => {
-    setEditingProduct(prod);
-    setEditRef(prod.reference);
-    setEditName(prod.name);
-    setEditCategory((prod.category as DoorCategory) || 'Bedroom');
-    setEditHeight(prod.height || 210);
-    setEditWidth(prod.width || 90);
-    setEditThickness(prod.thickness || 4);
-    setEditStock(prod.stock_quantity ?? 0);
-    setEditDesc(prod.description || '');
-  };
-
-  // Save Product Edits
-  const handleUpdateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-
-    setSavingEdit(true);
-    try {
-      const { data, error } = await supabase
-        .from('door_products')
-        .update({
-          reference: editRef.trim().toUpperCase(),
-          name: editName.trim(),
-          category: editCategory,
-          height: editHeight,
-          width: editWidth,
-          thickness: editThickness,
-          stock_quantity: Math.max(0, Number(editStock) || 0),
-          description: editDesc.trim() || null
-        })
-        .eq('id', editingProduct.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? data : p));
-      setEditingProduct(null);
-    } catch (err: any) {
-      console.error('Error updating product:', err);
-      alert(err.message || t('common.error', 'Erreur lors de la mise à jour du modèle.'));
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
-  // Quick delta adjustment (+1 / -1)
-  const handleQuickAdjustStock = async (prod: DoorProduct, delta: number) => {
-    const current = prod.stock_quantity ?? 0;
-    const newQty = Math.max(0, current + delta);
-    if (newQty === current) return;
-
-    try {
-      const { error } = await supabase
-        .from('door_products')
-        .update({ stock_quantity: newQty })
-        .eq('id', prod.id);
-
-      if (error) throw error;
-      setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock_quantity: newQty } : p));
-    } catch (err) {
-      console.error('Error quick adjusting stock:', err);
-    }
-  };
-
-  // Open Stock Modal
-  const openStockModal = (prod: DoorProduct) => {
-    setStockAdjustProduct(prod);
-    setAdjustMode('add');
-    setAdjustQuantity(10);
-  };
-
-  // Submit Stock Adjustment
-  const handleApplyStockAdjustment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stockAdjustProduct) return;
-
-    setAdjusting(true);
-    try {
-      const current = stockAdjustProduct.stock_quantity ?? 0;
-      const targetQty = adjustMode === 'add' 
-        ? Math.max(0, current + Number(adjustQuantity))
-        : Math.max(0, Number(adjustQuantity));
-
-      const { data, error } = await supabase
-        .from('door_products')
-        .update({ stock_quantity: targetQty })
-        .eq('id', stockAdjustProduct.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setProducts(prev => prev.map(p => p.id === stockAdjustProduct.id ? data : p));
-      setStockAdjustProduct(null);
-    } catch (err: any) {
-      console.error('Error adjusting stock:', err);
-      alert(err.message || t('common.error', 'Erreur lors de la mise à jour du stock.'));
-    } finally {
-      setAdjusting(false);
-    }
-  };
-
-  // Delete Product
-  const handleDeleteProduct = async (prod: DoorProduct) => {
-    if (!confirm(t('products.confirmDelete', 'Êtes-vous sûr de vouloir supprimer ce modèle du catalogue ?'))) return;
-
-    try {
-      const { error } = await supabase
-        .from('door_products')
-        .delete()
-        .eq('id', prod.id);
-
-      if (error) throw error;
-      setProducts(prev => prev.filter(p => p.id !== prod.id));
-    } catch (err: any) {
-      console.error('Error deleting product:', err);
-      alert(err.message || t('common.error', 'Impossible de supprimer ce modèle (peut-être référencé dans des commandes existantes).'));
-    }
-  };
-
-  // Seed standard products with upsert
-  const handleSeedStandardProducts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('door_products')
-        .upsert(SAMPLE_PRODUCTS, { onConflict: 'reference' })
-        .select();
-
-      if (error) throw error;
-      await fetchProducts();
-      alert(t('products.seedSuccess', 'Catalogue initialisé avec les modèles de référence WPC et stocks !'));
-    } catch (err: any) {
-      console.error('Error seeding products:', err);
-      alert(err.message || t('common.error', 'Erreur d\'initialisation.'));
-    } finally {
-      setLoading(false);
-    }
+    await handleDeleteProduct(prod);
   };
 
   return (
@@ -334,7 +98,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
         <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={handleSeedStandardProducts}
+            onClick={handleSeedWithFeedback}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-nasaq-gold/20 hover:bg-nasaq-gold/30 text-nasaq-gold-dark border border-nasaq-gold/40 rounded-xl text-xs font-bold transition shadow-2xs"
             title="Recharger les modèles officiels standards avec stocks prédéfinis"
           >
@@ -374,7 +138,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               {t('products.totalStock', 'Stock Total')}
             </div>
             <div className="text-2xl font-black font-mono text-nasaq-teal mt-0.5">
-              {totalStockUnits} <span className="text-xs font-normal text-slate-500 font-sans">{t('products.units', 'unités')}</span>
+              {stats.totalStockUnits} <span className="text-xs font-normal text-slate-500 font-sans">{t('products.units', 'unités')}</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-nasaq-teal-subtle text-nasaq-teal flex items-center justify-center">
@@ -389,7 +153,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               {t('products.totalModels', 'Modèles')}
             </div>
             <div className="text-2xl font-black font-mono text-slate-800 mt-0.5">
-              {totalModels}
+              {stats.totalModels}
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
@@ -404,7 +168,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               {t('products.inStock', 'En stock')}
             </div>
             <div className="text-2xl font-black font-mono text-emerald-600 mt-0.5">
-              {inStockCount} <span className="text-xs font-normal text-slate-400 font-sans">/ {totalModels}</span>
+              {stats.inStockCount} <span className="text-xs font-normal text-slate-400 font-sans">/ {stats.totalModels}</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -419,7 +183,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               {t('products.outOfStock', 'Rupture')} / {t('products.lowStock', 'Faible')}
             </div>
             <div className="text-2xl font-black font-mono text-rose-600 mt-0.5">
-              {outOfStockCount} <span className="text-xs font-semibold text-amber-500 font-sans">+ {lowStockCount} bas</span>
+              {stats.outOfStockCount} <span className="text-xs font-semibold text-amber-500 font-sans">+ {stats.lowStockCount} bas</span>
             </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -573,7 +337,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteProduct(prod)}
+                          onClick={() => handleDeleteWithConfirm(prod)}
                           className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition"
                           title="Supprimer du catalogue"
                         >
@@ -701,16 +465,16 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                     type="text"
                     required
                     placeholder="ex: C3"
-                    value={ref}
-                    onChange={(e) => setRef(e.target.value)}
+                    value={addForm.ref}
+                    onChange={(e) => addForm.setRef(e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono font-bold uppercase focus:border-nasaq-teal focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.category', 'Catégorie *')}</label>
                   <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as DoorCategory)}
+                    value={addForm.category}
+                    onChange={(e) => addForm.setCategory(e.target.value as DoorCategory)}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none bg-white font-semibold"
                   >
                     <option value="Bedroom">{t('products.category.bedroom', 'Chambre')}</option>
@@ -727,8 +491,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   type="text"
                   required
                   placeholder="ex: Porte Chambre Deluxe WPC"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={addForm.name}
+                  onChange={(e) => addForm.setName(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
                 />
               </div>
@@ -738,8 +502,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.height', 'Hauteur (cm)')}</label>
                   <input 
                     type="number"
-                    value={height}
-                    onChange={(e) => setHeight(Number(e.target.value) || 210)}
+                    value={addForm.height}
+                    onChange={(e) => addForm.setHeight(Number(e.target.value) || 210)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -747,8 +511,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.width', 'Largeur (cm)')}</label>
                   <input 
                     type="number"
-                    value={width}
-                    onChange={(e) => setWidth(Number(e.target.value) || 90)}
+                    value={addForm.width}
+                    onChange={(e) => addForm.setWidth(Number(e.target.value) || 90)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -756,8 +520,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.thickness', 'Épaisseur (cm)')}</label>
                   <input 
                     type="number"
-                    value={thickness}
-                    onChange={(e) => setThickness(Number(e.target.value) || 4)}
+                    value={addForm.thickness}
+                    onChange={(e) => addForm.setThickness(Number(e.target.value) || 4)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -772,8 +536,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <input 
                   type="number"
                   min="0"
-                  value={initialStock}
-                  onChange={(e) => setInitialStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  value={addForm.initialStock}
+                  onChange={(e) => addForm.setInitialStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   placeholder="0"
                   className="w-full px-3 py-2 text-xs border border-nasaq-teal/40 rounded-lg font-mono font-bold text-slate-800 bg-white focus:outline-none"
                 />
@@ -787,8 +551,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <textarea 
                   rows={2}
                   placeholder={t('products.modal.descPlaceholder', 'Type de gravure, options de verre...')}
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
+                  value={addForm.desc}
+                  onChange={(e) => addForm.setDesc(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
                 />
               </div>
@@ -797,17 +561,17 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  disabled={submitting}
+                  disabled={addForm.submitting}
                   className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
                   {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={addForm.submitting}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  {submitting ? t('products.modal.creating', 'Création...') : t('products.modal.submit', 'Créer le Modèle')}
+                  {addForm.submitting ? t('products.modal.creating', 'Création...') : t('products.modal.submit', 'Créer le Modèle')}
                 </button>
               </div>
             </form>
@@ -842,16 +606,16 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <input 
                     type="text"
                     required
-                    value={editRef}
-                    onChange={(e) => setEditRef(e.target.value)}
+                    value={editForm.ref}
+                    onChange={(e) => editForm.setRef(e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono font-bold uppercase focus:border-nasaq-teal focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.category', 'Catégorie')}</label>
                   <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value as DoorCategory)}
+                    value={editForm.category}
+                    onChange={(e) => editForm.setCategory(e.target.value as DoorCategory)}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none bg-white font-semibold"
                   >
                     <option value="Bedroom">{t('products.category.bedroom', 'Chambre')}</option>
@@ -867,8 +631,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <input 
                   type="text"
                   required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
+                  value={editForm.name}
+                  onChange={(e) => editForm.setName(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
                 />
               </div>
@@ -878,8 +642,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.height', 'Hauteur (cm)')}</label>
                   <input 
                     type="number"
-                    value={editHeight}
-                    onChange={(e) => setEditHeight(Number(e.target.value) || 210)}
+                    value={editForm.height}
+                    onChange={(e) => editForm.setHeight(Number(e.target.value) || 210)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -887,8 +651,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.width', 'Largeur (cm)')}</label>
                   <input 
                     type="number"
-                    value={editWidth}
-                    onChange={(e) => setEditWidth(Number(e.target.value) || 90)}
+                    value={editForm.width}
+                    onChange={(e) => editForm.setWidth(Number(e.target.value) || 90)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -896,8 +660,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                   <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.thickness', 'Épaisseur (cm)')}</label>
                   <input 
                     type="number"
-                    value={editThickness}
-                    onChange={(e) => setEditThickness(Number(e.target.value) || 4)}
+                    value={editForm.thickness}
+                    onChange={(e) => editForm.setThickness(Number(e.target.value) || 4)}
                     className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded font-mono"
                   />
                 </div>
@@ -912,8 +676,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <input 
                   type="number"
                   min="0"
-                  value={editStock}
-                  onChange={(e) => setEditStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  value={editForm.stock}
+                  onChange={(e) => editForm.setStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono font-bold text-slate-900 bg-white focus:outline-none"
                 />
               </div>
@@ -922,8 +686,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <label className="block font-semibold text-slate-600 mb-1">{t('products.modal.description', 'Description Technique')}</label>
                 <textarea 
                   rows={2}
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
+                  value={editForm.desc}
+                  onChange={(e) => editForm.setDesc(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:border-nasaq-teal focus:outline-none"
                 />
               </div>
@@ -932,17 +696,17 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
-                  disabled={savingEdit}
+                  disabled={editForm.saving}
                   className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
                   {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
-                  disabled={savingEdit}
+                  disabled={editForm.saving}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50"
                 >
-                  {savingEdit ? t('common.saving', 'Enregistrement...') : t('products.modal.saveChanges', 'Enregistrer les Modifications')}
+                  {editForm.saving ? t('common.saving', 'Enregistrement...') : t('products.modal.saveChanges', 'Enregistrer les Modifications')}
                 </button>
               </div>
             </form>
@@ -985,9 +749,9 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setAdjustMode('add')}
+                  onClick={() => stockAdjustForm.setMode('add')}
                   className={`py-1.5 text-center font-bold rounded-lg transition ${
-                    adjustMode === 'add'
+                    stockAdjustForm.mode === 'add'
                       ? 'bg-white text-nasaq-teal shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -997,11 +761,11 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setAdjustMode('set');
-                    setAdjustQuantity(stockAdjustProduct.stock_quantity ?? 0);
+                    stockAdjustForm.setMode('set');
+                    stockAdjustForm.setQuantity(stockAdjustProduct.stock_quantity ?? 0);
                   }}
                   className={`py-1.5 text-center font-bold rounded-lg transition ${
-                    adjustMode === 'set'
+                    stockAdjustForm.mode === 'set'
                       ? 'bg-white text-nasaq-teal shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -1013,7 +777,7 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               {/* Quantity Input */}
               <div>
                 <label className="block font-semibold text-slate-600 mb-1.5">
-                  {adjustMode === 'add'
+                  {stockAdjustForm.mode === 'add'
                     ? 'Quantité de portes reçues (à ajouter au stock) :'
                     : 'Quantité totale exacte en inventaire :'}
                 </label>
@@ -1022,8 +786,8 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                     type="number"
                     min="0"
                     required
-                    value={adjustQuantity}
-                    onChange={(e) => setAdjustQuantity(parseInt(e.target.value, 10) || 0)}
+                    value={stockAdjustForm.quantity}
+                    onChange={(e) => stockAdjustForm.setQuantity(parseInt(e.target.value, 10) || 0)}
                     className="w-full px-3 py-2 text-sm font-mono font-bold border border-slate-300 rounded-xl focus:border-nasaq-teal focus:outline-none"
                   />
                   <span className="text-slate-500 font-semibold shrink-0">{t('products.units', 'unités')}</span>
@@ -1034,9 +798,9 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
               <div className="p-3 bg-emerald-50 border border-emerald-200/80 rounded-xl flex items-center justify-between text-emerald-800">
                 <span className="font-medium">Nouveau stock prévu :</span>
                 <span className="font-mono font-black text-base">
-                  {adjustMode === 'add'
-                    ? (stockAdjustProduct.stock_quantity ?? 0) + Number(adjustQuantity)
-                    : Number(adjustQuantity)} {t('products.units', 'unités')}
+                  {stockAdjustForm.mode === 'add'
+                    ? (stockAdjustProduct.stock_quantity ?? 0) + Number(stockAdjustForm.quantity)
+                    : Number(stockAdjustForm.quantity)} {t('products.units', 'unités')}
                 </span>
               </div>
 
@@ -1044,18 +808,18 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setStockAdjustProduct(null)}
-                  disabled={adjusting}
+                  disabled={stockAdjustForm.adjusting}
                   className="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg font-semibold hover:bg-slate-50 transition"
                 >
                   {t('common.cancel', 'Annuler')}
                 </button>
                 <button
                   type="submit"
-                  disabled={adjusting}
+                  disabled={stockAdjustForm.adjusting}
                   className="px-4 py-2 bg-nasaq-teal hover:bg-nasaq-teal-dark text-white rounded-lg font-bold transition disabled:opacity-50 flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{adjusting ? t('common.saving', 'Enregistrement...') : t('common.confirm', 'Valider')}</span>
+                  <span>{stockAdjustForm.adjusting ? t('common.saving', 'Enregistrement...') : t('common.confirm', 'Valider')}</span>
                 </button>
               </div>
             </form>
