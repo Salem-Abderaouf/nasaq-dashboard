@@ -42,6 +42,17 @@ export interface Prospect {
 
 export type DoorCategory = 'Kitchen' | 'Bedroom' | 'Bathroom' | 'Custom';
 
+export interface StockLogEntry {
+  id: string;
+  date: string;
+  type: 'arrival' | 'adjustment' | 'initial';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  reason?: string;
+  timestamp: string;
+}
+
 export interface DoorProduct {
   id: string;
   reference: string;
@@ -53,6 +64,8 @@ export interface DoorProduct {
   description?: string | null;
   drawing_url?: string | null;
   stock_quantity?: number;
+  color_options?: string[];
+  stock_logs?: StockLogEntry[];
   created_at?: string;
 }
 

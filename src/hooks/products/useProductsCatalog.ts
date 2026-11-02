@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../../api/supabase';
-import { DoorProduct, DoorCategory } from '../../types/database';
-import { SAMPLE_PRODUCTS } from '../../data/sampleData';
+import { DoorProduct, DoorCategory, StockLogEntry } from '../../types/database';
 import {
   StockFilterType,
   calculateInventoryStats,
   filterProducts,
   InventoryStats,
+  enrichProductWithMetadata,
+  serializeProductDescription,
 } from '../../helpers/products/productHelpers';
 
 export function useProductsCatalog() {
@@ -29,12 +30,15 @@ export function useProductsCatalog() {
   const [width, setWidth] = useState<number>(90);
   const [thickness, setThickness] = useState<number>(4);
   const [initialStock, setInitialStock] = useState<number>(0);
+  const [selectedColors, setSelectedColors] = useState<string[]>(['chene_bois']);
   const [desc, setDesc] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   // Stock Adjust form
   const [adjustMode, setAdjustMode] = useState<'add' | 'set'>('add');
-  const [adjustQuantity, setAdjustQuantity] = useState<number>(10);
+  const [adjustQuantity, setAdjustQuantity] = useState<number>(20);
+  const [adjustDate, setAdjustDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [adjustReason, setAdjustReason] = useState<string>('');
   const [adjusting, setAdjusting] = useState<boolean>(false);
 
   // Edit product form
@@ -45,10 +49,11 @@ export function useProductsCatalog() {
   const [editWidth, setEditWidth] = useState<number>(90);
   const [editThickness, setEditThickness] = useState<number>(4);
   const [editStock, setEditStock] = useState<number>(0);
+  const [editColors, setEditColors] = useState<string[]>([]);
   const [editDesc, setEditDesc] = useState<string>('');
   const [savingEdit, setSavingEdit] = useState<boolean>(false);
 
-  // Fetch products from database
+  // Fetch products from database and enrich with metadata
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
@@ -58,7 +63,8 @@ export function useProductsCatalog() {
         .order('reference');
 
       if (error) throw error;
-      setProducts(data || []);
+      const enriched = (data || []).map(enrichProductWithMetadata);
+      setProducts(enriched);
     } catch (err) {
       console.error('Error fetching products:', err);
     } finally {
@@ -80,6 +86,19 @@ export function useProductsCatalog() {
     return calculateInventoryStats(products);
   }, [products]);
 
+  // Color selection toggles
+  const toggleAddColor = (colorId: string) => {
+    setSelectedColors((prev) =>
+      prev.includes(colorId) ? prev.filter((c) => c !== colorId) : [...prev, colorId]
+    );
+  };
+
+  const toggleEditColor = (colorId: string) => {
+    setEditColors((prev) =>
+      prev.includes(colorId) ? prev.filter((c) => c !== colorId) : [...prev, colorId]
+    );
+  };
+
   // Create Product
   const handleCreateProduct = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault();
@@ -87,6 +106,23 @@ export function useProductsCatalog() {
 
     setSubmitting(true);
     try {
+      const stockQty = Math.max(0, initialStock || 0);
+      const initialLogs: StockLogEntry[] = [];
+      if (stockQty > 0) {
+        initialLogs.push({
+          id: `log-${Date.now()}`,
+          date: new Date().toISOString().split('T')[0],
+          type: 'initial',
+          quantity: stockQty,
+          previousStock: 0,
+          newStock: stockQty,
+          reason: 'Création du modèle (Stock initial)',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const serializedDescription = serializeProductDescription(desc, selectedColors, initialLogs);
+
       const { data, error } = await supabase
         .from('door_products')
         .insert({
@@ -96,18 +132,20 @@ export function useProductsCatalog() {
           height: height,
           width: width,
           thickness: thickness,
-          stock_quantity: Math.max(0, initialStock || 0),
-          description: desc.trim() || null,
+          stock_quantity: stockQty,
+          description: serializedDescription,
         })
         .select()
         .single();
 
       if (error) throw error;
-      setProducts((prev) => [...prev, data]);
+      const enriched = enrichProductWithMetadata(data);
+      setProducts((prev) => [...prev, enriched]);
       setIsAddModalOpen(false);
       setRef('');
       setName('');
       setInitialStock(0);
+      setSelectedColors(['chene_bois']);
       setDesc('');
       return true;
     } catch (err: any) {
@@ -129,6 +167,7 @@ export function useProductsCatalog() {
     setEditWidth(prod.width || 90);
     setEditThickness(prod.thickness || 4);
     setEditStock(prod.stock_quantity ?? 0);
+    setEditColors(prod.color_options || ['chene_bois']);
     setEditDesc(prod.description || '');
   };
 
@@ -139,6 +178,31 @@ export function useProductsCatalog() {
 
     setSavingEdit(true);
     try {
+      const existingLogs = editingProduct.stock_logs || [];
+      const newStockVal = Math.max(0, Number(editStock) || 0);
+
+      // If stock was edited manually in edit modal, log the delta
+      const currentStock = editingProduct.stock_quantity ?? 0;
+      let updatedLogs = existingLogs;
+      if (newStockVal !== currentStock) {
+        const delta = newStockVal - currentStock;
+        updatedLogs = [
+          {
+            id: `log-${Date.now()}`,
+            date: new Date().toISOString().split('T')[0],
+            type: 'adjustment',
+            quantity: delta,
+            previousStock: currentStock,
+            newStock: newStockVal,
+            reason: 'Ajustement manuel fiche produit',
+            timestamp: new Date().toISOString(),
+          },
+          ...existingLogs,
+        ];
+      }
+
+      const serializedDescription = serializeProductDescription(editDesc, editColors, updatedLogs);
+
       const { data, error } = await supabase
         .from('door_products')
         .update({
@@ -148,15 +212,16 @@ export function useProductsCatalog() {
           height: editHeight,
           width: editWidth,
           thickness: editThickness,
-          stock_quantity: Math.max(0, Number(editStock) || 0),
-          description: editDesc.trim() || null,
+          stock_quantity: newStockVal,
+          description: serializedDescription,
         })
         .eq('id', editingProduct.id)
         .select()
         .single();
 
       if (error) throw error;
-      setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? data : p)));
+      const enriched = enrichProductWithMetadata(data);
+      setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? enriched : p)));
       setEditingProduct(null);
       return true;
     } catch (err: any) {
@@ -168,33 +233,16 @@ export function useProductsCatalog() {
     }
   };
 
-  // Quick delta adjustment (+1 / -1)
-  const handleQuickAdjustStock = async (prod: DoorProduct, delta: number) => {
-    const current = prod.stock_quantity ?? 0;
-    const newQty = Math.max(0, current + delta);
-    if (newQty === current) return;
-
-    try {
-      const { error } = await supabase
-        .from('door_products')
-        .update({ stock_quantity: newQty })
-        .eq('id', prod.id);
-
-      if (error) throw error;
-      setProducts((prev) => prev.map((p) => (p.id === prod.id ? { ...p, stock_quantity: newQty } : p)));
-    } catch (err) {
-      console.error('Error quick adjusting stock:', err);
-    }
-  };
-
   // Open Stock Modal
   const openStockModal = (prod: DoorProduct) => {
     setStockAdjustProduct(prod);
     setAdjustMode('add');
-    setAdjustQuantity(10);
+    setAdjustQuantity(20);
+    setAdjustDate(new Date().toISOString().split('T')[0]);
+    setAdjustReason('');
   };
 
-  // Submit Stock Adjustment
+  // Submit Stock Adjustment with detailed date & reason logging
   const handleApplyStockAdjustment = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault();
     if (!stockAdjustProduct) return false;
@@ -207,15 +255,44 @@ export function useProductsCatalog() {
           ? Math.max(0, current + Number(adjustQuantity))
           : Math.max(0, Number(adjustQuantity));
 
+      const delta = adjustMode === 'add' ? Number(adjustQuantity) : Number(adjustQuantity) - current;
+      const formattedDate = adjustDate || new Date().toISOString().split('T')[0];
+      const defaultReason =
+        adjustMode === 'add'
+          ? `Arrivage de ${adjustQuantity} unité(s)`
+          : `Inventaire ajusté à ${targetQty} unité(s)`;
+
+      const newLogEntry: StockLogEntry = {
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        date: formattedDate,
+        type: adjustMode === 'add' ? 'arrival' : 'adjustment',
+        quantity: delta,
+        previousStock: current,
+        newStock: targetQty,
+        reason: adjustReason.trim() || defaultReason,
+        timestamp: new Date().toISOString(),
+      };
+
+      const updatedLogs = [newLogEntry, ...(stockAdjustProduct.stock_logs || [])];
+      const serializedDescription = serializeProductDescription(
+        stockAdjustProduct.description || '',
+        stockAdjustProduct.color_options || [],
+        updatedLogs
+      );
+
       const { data, error } = await supabase
         .from('door_products')
-        .update({ stock_quantity: targetQty })
+        .update({
+          stock_quantity: targetQty,
+          description: serializedDescription,
+        })
         .eq('id', stockAdjustProduct.id)
         .select()
         .single();
 
       if (error) throw error;
-      setProducts((prev) => prev.map((p) => (p.id === stockAdjustProduct.id ? data : p)));
+      const enriched = enrichProductWithMetadata(data);
+      setProducts((prev) => prev.map((p) => (p.id === stockAdjustProduct.id ? enriched : p)));
       setStockAdjustProduct(null);
       return true;
     } catch (err: any) {
@@ -240,29 +317,8 @@ export function useProductsCatalog() {
       return true;
     } catch (err: any) {
       console.error('Error deleting product:', err);
-      alert(err.message || 'Impossible de supprimer ce modèle (peut-être référencé dans des commandes existantes).');
+      alert(err.message || 'Impossible de supprimer ce modèle.');
       return false;
-    }
-  };
-
-  // Seed standard products with upsert
-  const handleSeedStandardProducts = async (): Promise<boolean> => {
-    try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('door_products')
-        .upsert(SAMPLE_PRODUCTS, { onConflict: 'reference' })
-        .select();
-
-      if (error) throw error;
-      await fetchProducts();
-      return true;
-    } catch (err: any) {
-      console.error('Error seeding products:', err);
-      alert(err.message || "Erreur d'initialisation.");
-      return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -302,6 +358,8 @@ export function useProductsCatalog() {
       setThickness,
       initialStock,
       setInitialStock,
+      selectedColors,
+      toggleColor: toggleAddColor,
       desc,
       setDesc,
       submitting,
@@ -323,17 +381,23 @@ export function useProductsCatalog() {
       setThickness: setEditThickness,
       stock: editStock,
       setStock: setEditStock,
+      colors: editColors,
+      toggleColor: toggleEditColor,
       desc: editDesc,
       setDesc: setEditDesc,
       saving: savingEdit,
     },
 
-    // Stock Adjust Form
+    // Stock Adjust Form & Log
     stockAdjustForm: {
       mode: adjustMode,
       setMode: setAdjustMode,
       quantity: adjustQuantity,
       setQuantity: setAdjustQuantity,
+      date: adjustDate,
+      setDate: setAdjustDate,
+      reason: adjustReason,
+      setReason: setAdjustReason,
       adjusting,
     },
 
@@ -342,10 +406,8 @@ export function useProductsCatalog() {
     handleCreateProduct,
     openEditModal,
     handleUpdateProduct,
-    handleQuickAdjustStock,
     openStockModal,
     handleApplyStockAdjustment,
     handleDeleteProduct,
-    handleSeedStandardProducts,
   };
 }
