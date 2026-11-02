@@ -7,6 +7,7 @@ export interface UserProfile {
   name: string;
   email: string;
   role: UserRole;
+  is_admin?: boolean;
   active: boolean;
   created_at: string;
 }
@@ -182,6 +183,7 @@ export interface WorkerAppCredentials {
   login_email: string;
   password?: string;
   app_access_enabled: boolean;
+  is_admin?: boolean;
   permissions: WorkerPermissions;
   last_login?: string | null;
 }
@@ -197,6 +199,7 @@ export interface Worker {
   base_salary: number;
   payment_day: number;
   notes?: string | null;
+  is_admin?: boolean;
   user_id?: string | null;
   created_at?: string;
   login_credentials?: WorkerAppCredentials;

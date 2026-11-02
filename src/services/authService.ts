@@ -16,42 +16,7 @@ function getSafeStorage(): Storage | null {
   return null;
 }
 
-// Pre-configured default worker accounts for quick testing & initial setup
-const DEFAULT_WORKER_ACCOUNTS: Record<string, WorkerAppCredentials> = {
-  // Rachid Mebarki (Chef d'Atelier)
-  'rachid.workshop@nasaq.dz': {
-    login_email: 'rachid.workshop@nasaq.dz',
-    password: 'rachid123',
-    app_access_enabled: true,
-    permissions: PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions,
-    last_login: null
-  },
-  // Sofiane Zenati (Commercial Showroom)
-  'sofiane.sales@nasaq.dz': {
-    login_email: 'sofiane.sales@nasaq.dz',
-    password: 'sofiane123',
-    app_access_enabled: true,
-    permissions: PERMISSION_PRESETS.find(p => p.id === 'commercial')!.permissions,
-    last_login: null
-  },
-  // Hamza Larbi (Opérateur CNC)
-  'hamza.tech@nasaq.dz': {
-    login_email: 'hamza.tech@nasaq.dz',
-    password: 'hamza123',
-    app_access_enabled: true,
-    permissions: PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions,
-    last_login: null
-  },
-  // Billel Cherif (Poseur)
-  'billel.install@nasaq.dz': {
-    login_email: 'billel.install@nasaq.dz',
-    password: 'billel123',
-    app_access_enabled: true,
-    permissions: PERMISSION_PRESETS.find(p => p.id === 'installer')!.permissions,
-    last_login: null
-  }
-};
-
+// In-memory or safe storage for worker app accounts
 export class AuthService {
   /**
    * Retrieve all saved worker credentials mapped by worker email or ID
@@ -61,15 +26,11 @@ export class AuthService {
       const storage = getSafeStorage();
       const data = storage ? storage.getItem(STORAGE_KEY_WORKER_ACCOUNTS) : null;
       if (!data) {
-        // Initialize with default worker accounts
-        if (storage) {
-          storage.setItem(STORAGE_KEY_WORKER_ACCOUNTS, JSON.stringify(DEFAULT_WORKER_ACCOUNTS));
-        }
-        return DEFAULT_WORKER_ACCOUNTS;
+        return {};
       }
       return JSON.parse(data);
     } catch {
-      return DEFAULT_WORKER_ACCOUNTS;
+      return {};
     }
   }
 
@@ -198,25 +159,12 @@ export class AuthService {
       return { success: false, error: 'Veuillez saisir votre identifiant et mot de passe.' };
     }
 
-    // 1. Check Master Admin Credentials
-    const isMasterAdmin = 
-      cleanId === 'jolylip@gmail.com' ||
-      cleanId === 'admin@nasaq.com' || 
-      cleanId === 'admin' || 
-      cleanId === 'direction@nasaq.com';
-
-    const isMasterPass =
-      (cleanId === 'jolylip@gmail.com' && (cleanPass === 'Salem*299' || cleanPass === 'admin123' || cleanPass === 'admin')) ||
-      cleanPass === 'Salem*299' ||
-      cleanPass === 'admin123' || 
-      cleanPass === 'admin' || 
-      cleanPass === 'Password123!';
-
-    if (isMasterAdmin && isMasterPass) {
+    // 1. Check Primary Admin Account (Strict single admin check)
+    if (cleanId === 'jolylip@gmail.com' && cleanPass === 'Salem*299') {
       const adminUser: AuthenticatedUser = {
-        id: cleanId === 'jolylip@gmail.com' ? 'bb1c76f7-8233-46b8-b471-3611186c189a' : 'admin-master-id',
-        name: cleanId === 'jolylip@gmail.com' ? 'Administrateur (jolylip)' : 'Direction Générale NASAQ',
-        email: cleanId === 'jolylip@gmail.com' ? 'jolylip@gmail.com' : 'direction@nasaq.com',
+        id: 'bb1c76f7-8233-46b8-b471-3611186c189a',
+        name: 'Administrateur',
+        email: 'jolylip@gmail.com',
         role: 'admin',
         position: 'Administrateur Général',
         permissions: ADMIN_PERMISSIONS
@@ -240,20 +188,21 @@ export class AuthService {
           .eq('id', supaAuth.user.id)
           .single();
 
-        const role = userProfile?.role || 'worker';
+        const isAdmin = userProfile?.is_admin === true || userProfile?.role === 'admin' || supaAuth.user.email?.toLowerCase() === 'jolylip@gmail.com';
+        const role = isAdmin ? 'admin' : (userProfile?.role || 'worker');
         const user: AuthenticatedUser = {
           id: supaAuth.user.id,
           name: userProfile?.name || supaAuth.user.email?.split('@')[0] || 'Utilisateur',
           email: supaAuth.user.email || cleanId,
           role: role,
-          position: role === 'admin' ? 'Administrateur' : 'Collaborateur',
-          permissions: role === 'admin' ? ADMIN_PERMISSIONS : PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions
+          position: isAdmin ? 'Administrateur' : 'Collaborateur',
+          permissions: isAdmin ? ADMIN_PERMISSIONS : PERMISSION_PRESETS.find(p => p.id === 'workshop')!.permissions
         };
         this.setCurrentUser(user);
         return { success: true, user };
       }
     } catch {
-      // Continue to local worker check if Supabase error (e.g. unconfirmed email or offline)
+      // Continue to worker check if Supabase error (e.g. unconfirmed email or offline)
     }
 
     // 3. Check Workers in Supabase Database (Cross-device & Production support)
@@ -284,7 +233,7 @@ export class AuthService {
             if (!creds.app_access_enabled) {
               return {
                 success: false,
-                error: 'Accès désactivé : L\'administrateur a suspendu la connexion de ce compte employé.'
+                error: 'Accès désactivé : L\'administrateur a suspendu la connexion de ce compte.'
               };
             }
 
@@ -296,14 +245,16 @@ export class AuthService {
             // Cache in localStorage for offline availability
             this.saveWorkerCredentials(w, creds);
 
+            const isWorkerAdmin = w.is_admin === true || creds.is_admin === true;
+            const role = isWorkerAdmin ? 'admin' : 'worker';
             const workerUser: AuthenticatedUser = {
               id: w.id,
               name: w.name,
               email: w.email || cleanId,
-              role: 'worker',
-              position: w.position || 'Artisan Menuisier WPC',
+              role: role,
+              position: w.position || (isWorkerAdmin ? 'Administrateur' : 'Artisan Menuisier WPC'),
               workerId: w.id,
-              permissions: creds.permissions || PERMISSION_PRESETS[0].permissions
+              permissions: isWorkerAdmin ? ADMIN_PERMISSIONS : (creds.permissions || PERMISSION_PRESETS[0].permissions)
             };
 
             this.setCurrentUser(workerUser);
@@ -315,7 +266,7 @@ export class AuthService {
       console.warn('Error verifying worker credentials against Supabase:', err);
     }
 
-    // 4. Check Local Worker App Credentials (Offline / Preset Accounts)
+    // 4. Check Local Worker App Credentials (Offline / Cached accounts)
     const accounts = this.getStoredWorkerAccounts();
     let matchedCreds: WorkerAppCredentials | null = null;
 
@@ -331,7 +282,7 @@ export class AuthService {
       if (!matchedCreds.app_access_enabled) {
         return {
           success: false,
-          error: 'Accès désactivé : L\'administrateur a suspendu la connexion de ce compte employé.'
+          error: 'Accès désactivé : L\'administrateur a suspendu la connexion de ce compte.'
         };
       }
 
@@ -340,31 +291,14 @@ export class AuthService {
         return { success: false, error: 'Mot de passe ou code PIN incorrect.' };
       }
 
-      // Find worker name and position if possible
-      let workerName = cleanId.split('@')[0].toUpperCase();
-      let workerPosition = 'Artisan Menuisier WPC';
-
-      if (cleanId.includes('rachid')) {
-        workerName = 'Rachid Mebarki';
-        workerPosition = 'Chef d\'Atelier & Maître Menuisier';
-      } else if (cleanId.includes('sofiane')) {
-        workerName = 'Sofiane Zenati';
-        workerPosition = 'Responsable Commercial & Showroom';
-      } else if (cleanId.includes('hamza')) {
-        workerName = 'Hamza Larbi';
-        workerPosition = 'Opérateur CNC & Découpe Précision';
-      } else if (cleanId.includes('billel')) {
-        workerName = 'Billel Cherif';
-        workerPosition = 'Chef d\'Équipe Pose & Installation';
-      }
-
+      const isWorkerAdmin = matchedCreds.is_admin === true;
       const workerUser: AuthenticatedUser = {
         id: `worker-${cleanId}`,
-        name: workerName,
+        name: cleanId.split('@')[0],
         email: matchedCreds.login_email,
-        role: 'worker',
-        position: workerPosition,
-        permissions: matchedCreds.permissions
+        role: isWorkerAdmin ? 'admin' : 'worker',
+        position: isWorkerAdmin ? 'Administrateur' : 'Collaborateur',
+        permissions: isWorkerAdmin ? ADMIN_PERMISSIONS : matchedCreds.permissions
       };
 
       this.setCurrentUser(workerUser);
