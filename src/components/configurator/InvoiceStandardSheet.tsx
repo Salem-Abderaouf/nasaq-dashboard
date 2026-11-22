@@ -21,7 +21,11 @@ export const InvoiceStandardSheet: React.FC<InvoiceStandardSheetProps> = ({
     false,
     info.isPoseEnabled,
     info.isTransportEnabled,
-    info.paidAmount
+    info.paidAmount,
+    info.customPoseCost,
+    info.customTransportCost,
+    info.customPoseRateSingle,
+    info.customPoseRateDouble
   );
 
   return (

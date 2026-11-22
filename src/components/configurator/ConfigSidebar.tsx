@@ -6,6 +6,7 @@ import { calculateDoorUnitPrice, calculateDefaultPromoPrice } from '../../utils/
 import { Client, Order, DoorProduct } from '../../types/database';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../api/supabase';
+import { formatMoney } from '../../utils/formatters';
 import { 
   Plus, 
   Trash2, 
@@ -67,6 +68,7 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
 }) => {
   const { t, isRtl } = useLanguage();
   const [visualCtrlOpen, setVisualCtrlOpen] = useState(false);
+  const [poseRatesOpen, setPoseRatesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(info.clientName || '');
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const clientDropdownRef = useRef<HTMLDivElement>(null);
@@ -645,39 +647,254 @@ export const ConfigSidebar: React.FC<ConfigSidebarProps> = ({
             />
           </div>
 
-          {/* Toggle Installation / Pose */}
-          <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
-            <div>
-              <label htmlFor="chk-pose" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
-                <span>🔨 {t('config.includeInstallation', 'Inclure la Pose / Installation')}</span>
-              </label>
-              <span className="text-[10px] text-slate-500">{t('config.poseFee', '5 000 DA simple • 6 000 DA 2 vantaux')}</span>
-            </div>
-            <input 
-              id="chk-pose"
-              type="checkbox"
-              checked={info.isPoseEnabled}
-              onChange={(e) => onUpdateInfo({ isPoseEnabled: e.target.checked })}
-              className="w-4 h-4 text-nasaq-teal rounded cursor-pointer accent-nasaq-teal"
-            />
-          </div>
+          {/* Pose & Transport Cost Calculation Values */}
+          {(() => {
+            const singleCount = doors.filter(d => d.doorStructure !== 'double').length;
+            const doubleCount = doors.filter(d => d.doorStructure === 'double').length;
+            const rateSingle = (info.customPoseRateSingle !== undefined && info.customPoseRateSingle !== null) ? info.customPoseRateSingle : 5000;
+            const rateDouble = (info.customPoseRateDouble !== undefined && info.customPoseRateDouble !== null) ? info.customPoseRateDouble : 6000;
+            const defaultStandardPoseCost = singleCount * 5000 + doubleCount * 6000;
+            const defaultPoseCost = singleCount * rateSingle + doubleCount * rateDouble;
 
-          {/* Toggle Transport / Delivery */}
-          <div className="bg-slate-100/80 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
-            <div>
-              <label htmlFor="chk-transport" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
-                <span>🚚 {t('config.includeTransport', 'Inclure le Transport / Livraison')}</span>
-              </label>
-              <span className="text-[10px] text-slate-500">{t('config.transportFee', 'Forfait fixe : 3 000 DA par commande')}</span>
-            </div>
-            <input 
-              id="chk-transport"
-              type="checkbox"
-              checked={info.isTransportEnabled}
-              onChange={(e) => onUpdateInfo({ isTransportEnabled: e.target.checked })}
-              className="w-4 h-4 text-nasaq-teal rounded cursor-pointer accent-nasaq-teal"
-            />
-          </div>
+            const currentPoseCost = (info.customPoseCost !== undefined && info.customPoseCost !== null)
+              ? info.customPoseCost
+              : defaultPoseCost;
+
+            const isPoseCustomized = (info.customPoseCost !== undefined && info.customPoseCost !== null && info.customPoseCost !== defaultStandardPoseCost) ||
+              (info.customPoseRateSingle !== undefined && info.customPoseRateSingle !== null && info.customPoseRateSingle !== 5000) ||
+              (info.customPoseRateDouble !== undefined && info.customPoseRateDouble !== null && info.customPoseRateDouble !== 6000);
+
+            const defaultStandardTransportCost = doors.length > 0 ? 3000 : 0;
+            const currentTransportCost = (info.customTransportCost !== undefined && info.customTransportCost !== null)
+              ? info.customTransportCost
+              : defaultStandardTransportCost;
+
+            const isTransportCustomized = (info.customTransportCost !== undefined && info.customTransportCost !== null && info.customTransportCost !== defaultStandardTransportCost);
+
+            return (
+              <>
+                {/* Toggle Installation / Pose */}
+                <div className={`border rounded-xl p-2.5 transition-colors ${
+                  info.isPoseEnabled ? 'bg-slate-50 border-slate-300 shadow-2xs' : 'bg-slate-100/70 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="chk-pose" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
+                      <span>🔨 {t('config.includeInstallation', 'Inclure la Pose / Installation')}</span>
+                    </label>
+                    <input 
+                      id="chk-pose"
+                      type="checkbox"
+                      checked={info.isPoseEnabled}
+                      onChange={(e) => onUpdateInfo({ isPoseEnabled: e.target.checked })}
+                      className="w-4 h-4 text-nasaq-teal rounded cursor-pointer accent-nasaq-teal"
+                    />
+                  </div>
+
+                  {info.isPoseEnabled ? (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-slate-600">
+                              {t('config.poseAmountLabel', 'Montant Pose & Installation')}
+                            </span>
+                            {isPoseCustomized && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                {t('config.customized', 'Ajusté')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              step="500"
+                              value={currentPoseCost}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                                onUpdateInfo({ customPoseCost: val });
+                              }}
+                              className="w-full pl-2.5 pr-10 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-nasaq-teal font-mono font-bold text-slate-900"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 font-mono">
+                              DA
+                            </span>
+                          </div>
+                        </div>
+
+                        {isPoseCustomized && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateInfo({
+                              customPoseCost: null,
+                              customPoseRateSingle: null,
+                              customPoseRateDouble: null
+                            })}
+                            className="mt-4 shrink-0 flex items-center gap-1 text-[10px] text-nasaq-teal hover:text-nasaq-teal-dark font-bold bg-nasaq-teal/10 hover:bg-nasaq-teal/20 px-2 py-1.5 rounded-lg transition"
+                            title={t('config.resetToDefaultTooltip', 'Rétablir la valeur par défaut')}
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>{t('config.resetDefault', 'Défaut')}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="pt-0.5">
+                        <div className="flex items-center justify-between text-[10px] text-slate-500">
+                          <span>
+                            {t('config.poseFee', '5 000 DA simple • 6 000 DA 2 vantaux')}
+                            {doors.length > 0 && ` (${formatMoney(defaultStandardPoseCost)})`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPoseRatesOpen(!poseRatesOpen)}
+                            className="text-nasaq-teal hover:underline font-semibold"
+                          >
+                            {poseRatesOpen ? '▲ Masquer' : '▼ ' + t('config.unitRatesToggle', 'Tarifs par type de vantail')}
+                          </button>
+                        </div>
+
+                        {poseRatesOpen && (
+                          <div className="grid grid-cols-2 gap-2 mt-2 p-2 bg-white rounded-lg border border-slate-200">
+                            <div>
+                              <label className="block text-[9.5px] font-semibold text-slate-500 mb-0.5">
+                                {t('config.singleRate', 'Simple (1 vantail)')}
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="500"
+                                  value={rateSingle}
+                                  onChange={(e) => {
+                                    const rSingle = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                                    const newPoseCost = singleCount * rSingle + doubleCount * rateDouble;
+                                    onUpdateInfo({
+                                      customPoseRateSingle: rSingle,
+                                      customPoseCost: newPoseCost
+                                    });
+                                  }}
+                                  className="w-full pl-2 pr-7 py-1 text-xs bg-white border border-slate-300 rounded focus:outline-none focus:border-nasaq-teal font-mono font-bold"
+                                />
+                                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 font-mono">DA</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[9.5px] font-semibold text-slate-500 mb-0.5">
+                                {t('config.doubleRate', 'Double (2 vantaux)')}
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="500"
+                                  value={rateDouble}
+                                  onChange={(e) => {
+                                    const rDouble = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                                    const newPoseCost = singleCount * rateSingle + doubleCount * rDouble;
+                                    onUpdateInfo({
+                                      customPoseRateDouble: rDouble,
+                                      customPoseCost: newPoseCost
+                                    });
+                                  }}
+                                  className="w-full pl-2 pr-7 py-1 text-xs bg-white border border-slate-300 rounded focus:outline-none focus:border-nasaq-teal font-mono font-bold"
+                                />
+                                <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 font-mono">DA</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <span className="text-[10px] text-slate-400 italic">
+                        {t('config.disabled', 'Désactivé')} (0 DA) • {t('config.poseFee', '5 000 DA simple • 6 000 DA 2 vantaux')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Toggle Transport / Delivery */}
+                <div className={`border rounded-xl p-2.5 transition-colors ${
+                  info.isTransportEnabled ? 'bg-slate-50 border-slate-300 shadow-2xs' : 'bg-slate-100/70 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="chk-transport" className="flex items-center gap-1.5 text-slate-800 font-bold cursor-pointer text-xs">
+                      <span>🚚 {t('config.includeTransport', 'Inclure le Transport / Livraison')}</span>
+                    </label>
+                    <input 
+                      id="chk-transport"
+                      type="checkbox"
+                      checked={info.isTransportEnabled}
+                      onChange={(e) => onUpdateInfo({ isTransportEnabled: e.target.checked })}
+                      className="w-4 h-4 text-nasaq-teal rounded cursor-pointer accent-nasaq-teal"
+                    />
+                  </div>
+
+                  {info.isTransportEnabled ? (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[10px] font-bold text-slate-600">
+                              {t('config.transportAmountLabel', 'Montant Transport & Livraison')}
+                            </span>
+                            {isTransportCustomized && (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                {t('config.customized', 'Ajusté')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              step="500"
+                              value={currentTransportCost}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                                onUpdateInfo({ customTransportCost: val });
+                              }}
+                              className="w-full pl-2.5 pr-10 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-nasaq-teal font-mono font-bold text-slate-900"
+                            />
+                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 font-mono">
+                              DA
+                            </span>
+                          </div>
+                        </div>
+
+                        {isTransportCustomized && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateInfo({ customTransportCost: null })}
+                            className="mt-4 shrink-0 flex items-center gap-1 text-[10px] text-nasaq-teal hover:text-nasaq-teal-dark font-bold bg-nasaq-teal/10 hover:bg-nasaq-teal/20 px-2 py-1.5 rounded-lg transition"
+                            title={t('config.resetToDefaultTooltip', 'Rétablir la valeur par défaut')}
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>{t('config.resetDefault', 'Défaut')}</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-slate-500">
+                        <span>{t('config.transportFee', 'Forfait fixe : 3 000 DA par commande')}</span>
+                        {doors.length === 0 && (
+                          <span className="italic text-slate-400">({formatMoney(3000)})</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <span className="text-[10px] text-slate-400 italic">
+                        {t('config.disabled', 'Désactivé')} (0 DA) • {t('config.transportFee', 'Forfait fixe : 3 000 DA par commande')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         {/* Section 2: Visual 2D Controls (Collapsible) */}

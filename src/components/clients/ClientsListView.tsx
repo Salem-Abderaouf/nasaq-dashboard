@@ -278,11 +278,15 @@ export const ClientsListView: React.FC<ClientsListViewProps> = ({
                     )}
 
                     {/* Notes */}
-                    {client.notes && (
-                      <p className="text-[11px] text-slate-500 italic line-clamp-2 bg-amber-50/60 p-2 rounded-xl border border-amber-100/70 mt-1">
-                        "{client.notes}"
-                      </p>
-                    )}
+                    {(() => {
+                      const noteText = client.notes?.replace(/Créé depuis le studio de configuration(?:\s*\([^)]*\))?/gi, '').trim();
+                      if (!noteText) return null;
+                      return (
+                        <p className="text-[11px] text-slate-500 italic line-clamp-2 bg-amber-50/60 p-2 rounded-xl border border-amber-100/70 mt-1">
+                          "{noteText}"
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
 

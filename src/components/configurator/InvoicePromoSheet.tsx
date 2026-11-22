@@ -21,7 +21,11 @@ export const InvoicePromoSheet: React.FC<InvoicePromoSheetProps> = ({
     true,
     info.isPoseEnabled,
     info.isTransportEnabled,
-    info.paidAmount
+    info.paidAmount,
+    info.customPoseCost,
+    info.customTransportCost,
+    info.customPoseRateSingle,
+    info.customPoseRateDouble
   );
 
   return (

@@ -166,7 +166,8 @@ export function useClientsList() {
     setEditName(client.name || '');
     setEditPhone(client.phone || '');
     setEditAddress(client.address || '');
-    setEditNotes(client.notes || '');
+    const cleanNotes = (client.notes || '').replace(/Créé depuis le studio de configuration(?:\s*\([^)]*\))?/gi, '').trim();
+    setEditNotes(cleanNotes);
   }, []);
 
   const closeEditModal = useCallback(() => {

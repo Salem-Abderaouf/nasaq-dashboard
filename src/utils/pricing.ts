@@ -60,7 +60,11 @@ export function calculateOrderSummary(
   isPromoEnabled: boolean,
   isPoseEnabled: boolean,
   isTransportEnabled: boolean,
-  paidAmount: number = 0
+  paidAmount: number = 0,
+  customPoseCost?: number | null,
+  customTransportCost?: number | null,
+  customPoseRateSingle?: number | null,
+  customPoseRateDouble?: number | null
 ): OrderCalculationSummary {
   let singleCount = 0;
   let doubleCount = 0;
@@ -81,12 +85,17 @@ export function calculateOrderSummary(
 
   const totalDoorsCount = doors.length;
 
+  const rateSingle = (customPoseRateSingle !== undefined && customPoseRateSingle !== null) ? customPoseRateSingle : 5000;
+  const rateDouble = (customPoseRateDouble !== undefined && customPoseRateDouble !== null) ? customPoseRateDouble : 6000;
+  const defaultPoseCost = singleCount * rateSingle + doubleCount * rateDouble;
+
   const poseCost = isPoseEnabled
-    ? (singleCount * 5000 + doubleCount * 6000)
+    ? (customPoseCost !== undefined && customPoseCost !== null ? customPoseCost : defaultPoseCost)
     : 0;
 
+  const defaultTransportCost = totalDoorsCount > 0 ? 3000 : 0;
   const transportCost = (isTransportEnabled && totalDoorsCount > 0)
-    ? 3000
+    ? (customTransportCost !== undefined && customTransportCost !== null ? customTransportCost : defaultTransportCost)
     : 0;
 
   const grandTotalNormal = subtotalDoorsNormal + poseCost + transportCost;

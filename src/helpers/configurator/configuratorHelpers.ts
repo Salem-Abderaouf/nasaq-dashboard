@@ -13,6 +13,10 @@ export const DEFAULT_STUDIO_INFO: StudioGeneralInfo = {
   isPromoEnabled: false,
   isPoseEnabled: true,
   isTransportEnabled: true,
+  customPoseCost: null,
+  customTransportCost: null,
+  customPoseRateSingle: null,
+  customPoseRateDouble: null,
   scale: 0.60,
   gridGap: 20
 };
@@ -31,18 +35,38 @@ export function calculateStudioTotals(
   doors: DoorConfigItem[],
   isPromoEnabled: boolean,
   isPoseEnabled: boolean,
-  isTransportEnabled: boolean
+  isTransportEnabled: boolean,
+  customPoseCost?: number | null,
+  customTransportCost?: number | null,
+  customPoseRateSingle?: number | null,
+  customPoseRateDouble?: number | null
 ): StudioFinancialTotals {
   let subtotal = 0;
+  let singleCount = 0;
+  let doubleCount = 0;
+
   doors.forEach(d => {
     subtotal += (isPromoEnabled ? d.pricePromo : d.priceNormal);
+    if (d.doorStructure === 'double') {
+      doubleCount++;
+    } else {
+      singleCount++;
+    }
   });
 
+  const rateSingle = (customPoseRateSingle !== undefined && customPoseRateSingle !== null) ? customPoseRateSingle : 5000;
+  const rateDouble = (customPoseRateDouble !== undefined && customPoseRateDouble !== null) ? customPoseRateDouble : 6000;
+  const defaultPoseCost = singleCount * rateSingle + doubleCount * rateDouble;
+
   const poseCost = isPoseEnabled 
-    ? doors.reduce((acc, d) => acc + (d.doorStructure === 'double' ? 6000 : 5000), 0) 
+    ? (customPoseCost !== undefined && customPoseCost !== null ? customPoseCost : defaultPoseCost)
     : 0;
 
-  const transportCost = isTransportEnabled && doors.length > 0 ? 3000 : 0;
+  const defaultTransportCost = doors.length > 0 ? 3000 : 0;
+  const transportCost = (isTransportEnabled && doors.length > 0)
+    ? (customTransportCost !== undefined && customTransportCost !== null ? customTransportCost : defaultTransportCost)
+    : 0;
+
   const grandTotal = subtotal + poseCost + transportCost;
 
   return {

@@ -26,7 +26,7 @@ export default {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         cinzel: ['Cinzel', 'serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        mono: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
       }
     },
   },

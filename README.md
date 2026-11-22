@@ -101,4 +101,4 @@ bun run build
 - **Teal Profond** : `#1c4b46`
 - **Dark Teal** : `#123330`
 - **Or Sable / Accent** : `#a3895c` / `#c2aa7e`
-- **Typographie** : *Cinzel* (Titres & Prestige), *Plus Jakarta Sans* (Interface), *JetBrains Mono* (Cotes & Chiffres).
+- **Typographie** : *Cinzel* (Titres & Prestige), *Plus Jakarta Sans* (Interface, Cotes & Chiffres tabulaires sans point dans le zéro).

@@ -207,6 +207,15 @@ export function useConfiguratorStudio({
       const code = extractOrderCode(orderData.order_number);
       const loadedDoors = reconstructDoorsFromDbItems(orderData.order_items, code);
 
+      const poseMatch = orderData.notes ? orderData.notes.match(/Pose:\s*(OUI|NON)(?:\s*\((\d+)\s*DA\))?/i) : null;
+      const transportMatch = orderData.notes ? orderData.notes.match(/Transport:\s*(OUI|NON)(?:\s*\((\d+)\s*DA\))?/i) : null;
+
+      const isPoseEnabled = poseMatch ? poseMatch[1].toUpperCase() === 'OUI' : (orderData.notes ? !orderData.notes.includes('Pose: NON') : true);
+      const customPoseCost = poseMatch && poseMatch[2] ? Number(poseMatch[2]) : null;
+
+      const isTransportEnabled = transportMatch ? transportMatch[1].toUpperCase() === 'OUI' : (orderData.notes ? !orderData.notes.includes('Transport: NON') : true);
+      const customTransportCost = transportMatch && transportMatch[2] ? Number(transportMatch[2]) : null;
+
       setDoors(loadedDoors);
       setInfo({
         editingOrderId: orderData.id,
@@ -221,8 +230,12 @@ export function useConfiguratorStudio({
           : new Date().toLocaleDateString('fr-FR'),
         paidAmount: Number(orderData.paid_amount) || 0,
         isPromoEnabled: orderData.is_promo_enabled ?? true,
-        isPoseEnabled: orderData.notes ? !orderData.notes.includes('Pose: NON') : true,
-        isTransportEnabled: orderData.notes ? !orderData.notes.includes('Transport: NON') : true,
+        isPoseEnabled,
+        isTransportEnabled,
+        customPoseCost,
+        customTransportCost,
+        customPoseRateSingle: null,
+        customPoseRateDouble: null,
         scale: 0.60,
         gridGap: 20
       });
@@ -251,6 +264,10 @@ export function useConfiguratorStudio({
       isPromoEnabled: false,
       isPoseEnabled: true,
       isTransportEnabled: true,
+      customPoseCost: null,
+      customTransportCost: null,
+      customPoseRateSingle: null,
+      customPoseRateDouble: null,
       scale: 0.60,
       gridGap: 20
     });
@@ -338,9 +355,9 @@ export function useConfiguratorStudio({
             .from('clients')
             .insert({
               name: clientName,
-              phone: '0550 00 00 00',
-              address: 'Adresse client configurateur',
-              notes: `Créé depuis le studio de configuration (${info.docRef})`
+              phone: info.clientPhone || '0550 00 00 00',
+              address: info.clientAddress || '',
+              notes: null
             })
             .select()
             .single();
@@ -380,11 +397,15 @@ export function useConfiguratorStudio({
         doors,
         info.isPromoEnabled ?? false,
         info.isPoseEnabled ?? true,
-        info.isTransportEnabled ?? true
+        info.isTransportEnabled ?? true,
+        info.customPoseCost,
+        info.customTransportCost,
+        info.customPoseRateSingle,
+        info.customPoseRateDouble
       );
       const grandTotal = totals.grandTotal;
 
-      const orderNotes = `Généré via Studio Configuration. Réf: ${info.docRef}. Pose: ${info.isPoseEnabled ? 'OUI' : 'NON'}, Transport: ${info.isTransportEnabled ? 'OUI' : 'NON'}`;
+      const orderNotes = `Généré via Studio Configuration. Réf: ${info.docRef}. Pose: ${info.isPoseEnabled ? 'OUI' : 'NON'} (${totals.poseCost} DA), Transport: ${info.isTransportEnabled ? 'OUI' : 'NON'} (${totals.transportCost} DA)`;
 
       let targetOrderId = info.editingOrderId;
       let orderNumber = info.orderNumber;

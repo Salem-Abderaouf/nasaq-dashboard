@@ -80,6 +80,10 @@ const DashboardLayout: React.FC = () => {
         isPromoEnabled: false,
         isPoseEnabled: true,
         isTransportEnabled: true,
+        customPoseCost: null,
+        customTransportCost: null,
+        customPoseRateSingle: null,
+        customPoseRateDouble: null,
         scale: 0.60,
         gridGap: 20
       }));

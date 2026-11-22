@@ -51,6 +51,10 @@ export interface StudioGeneralInfo {
   isPromoEnabled: boolean;
   isPoseEnabled: boolean;
   isTransportEnabled: boolean;
+  customPoseCost?: number | null;
+  customTransportCost?: number | null;
+  customPoseRateSingle?: number | null;
+  customPoseRateDouble?: number | null;
   scale: number;
   gridGap: number;
   editingOrderId?: string;

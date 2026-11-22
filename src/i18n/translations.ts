@@ -245,6 +245,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'config.remove': 'Retirer',
     'config.poseFee': '5 000 DA simple • 6 000 DA 2 vantaux',
     'config.transportFee': 'Forfait fixe : 3 000 DA par commande',
+    'config.poseAmountLabel': 'Montant Pose & Installation',
+    'config.transportAmountLabel': 'Montant Transport & Livraison',
+    'config.resetDefault': 'Défaut',
+    'config.resetToDefaultTooltip': 'Rétablir la valeur par défaut',
+    'config.customized': 'Ajusté',
+    'config.disabled': 'Désactivé',
+    'config.unitRatesToggle': 'Tarifs par type de vantail',
+    'config.singleRate': 'Simple (1 vantail)',
+    'config.doubleRate': 'Double (2 vantaux)',
 
     // Dashboard
     'dashboard.kpi.revenue': 'Chiffre d\'Affaires Total',
@@ -790,6 +799,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'config.remove': 'Remove',
     'config.poseFee': '5,000 DA single • 6,000 DA double leaf',
     'config.transportFee': 'Flat fee: 3,000 DA per order',
+    'config.poseAmountLabel': 'Fitting & Installation Fee',
+    'config.transportAmountLabel': 'Transport & Delivery Fee',
+    'config.resetDefault': 'Default',
+    'config.resetToDefaultTooltip': 'Reset to default value',
+    'config.customized': 'Custom',
+    'config.disabled': 'Disabled',
+    'config.unitRatesToggle': 'Rates by leaf type',
+    'config.singleRate': 'Single leaf',
+    'config.doubleRate': 'Double leaf',
 
     // Dashboard
     'dashboard.kpi.revenue': 'Total Revenue',
@@ -1335,6 +1353,15 @@ export const translations: Record<Language, Record<string, string>> = {
     'config.remove': 'إزالة',
     'config.poseFee': '5,000 د.ج بسيط • 6,000 د.ج درفتان',
     'config.transportFee': 'مبلغ ثابت: 3,000 د.ج للطلب',
+    'config.poseAmountLabel': 'تكلفة التركيب والتثبيت',
+    'config.transportAmountLabel': 'تكلفة النقل والتوصيل',
+    'config.resetDefault': 'الافتراضي',
+    'config.resetToDefaultTooltip': 'استعادة القيمة الافتراضية',
+    'config.customized': 'معدّل',
+    'config.disabled': 'معطّل',
+    'config.unitRatesToggle': 'الأسعار حسب نوع الدرفة',
+    'config.singleRate': 'بسيط (درفة واحدة)',
+    'config.doubleRate': 'مزدوج (درفتان)',
 
     // Dashboard
     'dashboard.kpi.revenue': 'إجمالي المداخيل',
